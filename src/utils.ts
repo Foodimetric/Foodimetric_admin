@@ -1,0 +1,1 @@
+export const FOODIMETRIC_HOST_URL = "https://foodimetric-backend.onrender.com"
