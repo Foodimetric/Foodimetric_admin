@@ -8,7 +8,7 @@ import {
   usePagination,
   useSortBy,
   UseTableInstanceProps,
-  //@ts-ignore
+  // @ts-expect-error: 'Table' is not exported directly but needed for typing
   Table,
   Row,
 } from "react-table";
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
     {
       columns,
       data,
-      //@ts-ignore
+     // @ts-expect-error: 'Table' is not exported directly but needed for typing
       initialState: { pageIndex: 0, pageSize: 20 },
     },
     useSortBy,
