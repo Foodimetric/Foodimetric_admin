@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
     {
       columns,
       data,
-     // @ts-expect-error: 'Table' is not exported directly but needed for typing
+      // @ts-expect-error: 'Table' is not exported directly but needed for typing
       initialState: { pageIndex: 0, pageSize: 20 },
     },
     useSortBy,
@@ -478,36 +478,46 @@ const Dashboard: React.FC = () => {
             className="min-w-full border-collapse border border-gray-300"
           >
             <thead>
-              {headerGroups.map((headerGroup: any) => (
-                <tr {...headerGroup.getHeaderGroupProps()} className="bg-gray-200">
-                  {headerGroup.headers.map((column: any) => (
-                    <th
-                      {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className="border border-gray-300 p-2 cursor-pointer select-none hover:bg-gray-100"
-                    >
-                      {column.render("Header")}
-                      <span>
-                        {column.isSorted
-                          ? column.isSortedDesc
-                            ? " 🔽"
-                            : " 🔼"
-                          : ""}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              ))}
+              {headerGroups.map((headerGroup: any) => {
+                const headerGroupProps = headerGroup.getHeaderGroupProps();
+                return (
+                  <tr key={headerGroup.id} {...headerGroupProps} className="bg-gray-200">
+                    {headerGroup.headers.map((column: any) => {
+                      const columnHeaderProps = column.getHeaderProps(column.getSortByToggleProps());
+                      return (
+                        <th
+                          key={column.id} // Adding a unique key here
+                          {...columnHeaderProps} // Spread remaining props
+                          className="border border-gray-300 p-2 cursor-pointer select-none hover:bg-gray-100"
+                        >
+                          {column.render("Header")}
+                          <span>
+                            {column.isSorted
+                              ? column.isSortedDesc
+                                ? " 🔽"
+                                : " 🔼"
+                              : ""}
+                          </span>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </thead>
             <tbody {...getTableBodyProps()}>
               {page.map((row: Row<UserData>) => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} className="text-center">
-                    {row.cells.map((cell) => (
-                      <td {...cell.getCellProps()} className="border border-gray-300 p-2">
-                        {cell.render("Cell")}
-                      </td>
-                    ))}
+                    {row.cells.map((cell) => {
+                      const cellProps = cell.getCellProps();
+                      return (
+                        <td {...cellProps} className="border border-gray-300 p-2">
+                          {cell.render("Cell")}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -603,7 +613,7 @@ const Dashboard: React.FC = () => {
                 const lastActive = lastActiveTime > 0 ? new Date(lastActiveTime).toLocaleDateString() : "N/A";
 
                 return (
-                  <tr key={user.id} className="text-center">
+                  <tr key={`${user.id}-${index}`} className="text-center">
                     <td className="border border-gray-300 p-2">{index + 1}</td>
                     <td className="border border-gray-300 p-2">{user.name}</td>
                     <td className="border border-gray-300 p-2">{user.totalCalculations}</td>
