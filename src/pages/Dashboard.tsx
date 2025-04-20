@@ -1,10 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chart, registerables } from "chart.js";
-import { Bar, Line, Pie } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 import { FOODIMETRIC_HOST_URL } from "../utils";
-import { Column, useTable, usePagination } from "react-table";
+import {
+  Column,
+  useTable,
+  usePagination,
+  useSortBy,
+  UseTableInstanceProps,
+  //@ts-ignore
+  Table,
+  Row,
+} from "react-table";
 
 Chart.register(...registerables);
+
+// Explicitly define the 'week' and 'month' properties in the calculation types
+type DailyCalculation = { _id: string; count: number };
+type WeeklyCalculation = DailyCalculation & { week: string };
+type MonthlyCalculation = DailyCalculation & { month: string };
+type YearlyCalculation = DailyCalculation & { year: string };
+type DailyUsage = { _id: string; count: number };
+type DailySignup = { _id: string; count: number };
+
+type UserCalculation = {
+  name: string;
+  calculations: { date: string; count: number }[];
+  totalCalculations: number; // Added totalCalculations type
+  id: string; // Assuming 'id' exists in userCalculations
+};
+
+type MostUsedCalculator = { name: string; count: number; trend: number };
+type TopUser = { id: string; name: string; usageCount: number; lastUsed: string };
+type AnthropometricStats = { weekly: number };
 
 type UserData = {
   category: number;
@@ -19,15 +47,17 @@ type UserData = {
 };
 
 type AnalyticsData = {
+  userCalculations: UserCalculation[]; // Updated type
   allUsers: UserData[];
-  dailyCalculations: { _id: string; count: number }[];
-  weeklyCalculations: { _id: string; count: number }[];
-  monthlyCalculations: { _id: string; count: number }[];
-  yearlyCalculations: { _id: string; count: number }[];
-  dailyUsage: { _id: string; count: number }[];
-  mostUsedCalculators: { name: string; count: number; trend: number }[];
-  topUsers: { id: string; name: string; usageCount: number; lastUsed: string }[];
-  anthropometricStats: { weekly: number };
+  dailyCalculations: DailyCalculation[];
+  weeklyCalculations: WeeklyCalculation[]; // Updated type
+  monthlyCalculations: MonthlyCalculation[]; // Updated type
+  yearlyCalculations: YearlyCalculation[]; // Updated type
+  dailyUsage: DailyUsage[];
+  dailySignups: DailySignup[]; // Assuming this exists in your backend response
+  mostUsedCalculators: MostUsedCalculator[];
+  topUsers: TopUser[];
+  anthropometricStats: AnthropometricStats;
   totalFoodDiaryLogs: number;
   weeklyFoodDiaryLogs: number;
   monthlyFoodDiaryLogs: number;
@@ -35,11 +65,13 @@ type AnalyticsData = {
   totalUsers: number;
   totalAnthropometricCalculations: number;
 };
+
 const Dashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [selectedRange, setSelectedRange] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-  const columns = useMemo<Column<UserData>[]>( // Explicit type declaration
+  const columns = useMemo<Column<UserData>[]>(
     () => [
       { Header: "Email", accessor: "email" },
       { Header: "First Name", accessor: "firstName" },
@@ -47,8 +79,6 @@ const Dashboard: React.FC = () => {
       { Header: "Usage", accessor: "usage" },
       { Header: "Category", accessor: "category" },
       { Header: "Google ID", accessor: "googleId" },
-
-
       {
         Header: "Last Usage Date",
         accessor: "lastUsageDate",
@@ -63,11 +93,21 @@ const Dashboard: React.FC = () => {
     []
   );
 
-  const data = useMemo(() => {
-    if (!analytics) {
-      return [];
-    }
-    return analytics.allUsers;
+  const data = useMemo(() => analytics?.allUsers ?? [], [analytics]);
+
+  const chartData = useMemo(() => {
+    if (!analytics) return { labels: [], datasets: [] };
+
+    const labels = analytics.userCalculations.flatMap((user) =>
+      user.calculations.map((c) => c.date)
+    );
+    const datasets = analytics.userCalculations.map((user) => ({
+      label: user.name,
+      data: user.calculations.map((c) => c.count),
+      backgroundColor: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.6)`,
+    }));
+
+    return { labels, datasets };
   }, [analytics]);
 
   const {
@@ -75,7 +115,7 @@ const Dashboard: React.FC = () => {
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    page, // Use 'page' instead of 'rows'
+    page,
     canPreviousPage,
     canNextPage,
     pageOptions,
@@ -85,18 +125,21 @@ const Dashboard: React.FC = () => {
     previousPage,
     setPageSize,
     state: { pageIndex, pageSize },
-  } = useTable(
+  } = useTable<UserData>(
     {
       columns,
       data,
-      initialState: { pageIndex: 0, pageSize: 20 }, // Initial page and page size
+      //@ts-ignore
+      initialState: { pageIndex: 0, pageSize: 20 },
     },
+    useSortBy,
     usePagination
-  );
-
+  ) as UseTableInstanceProps<UserData> & Table<UserData>; // Explicitly cast the return type
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
+      setError("");
       try {
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authentication token found");
@@ -112,9 +155,14 @@ const Dashboard: React.FC = () => {
           }
         );
 
-        if (!response.ok) throw new Error("Failed to fetch analytics");
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Failed to fetch analytics:", errorData);
+          throw new Error(`Failed to fetch analytics: ${response.status}`);
+        }
 
-        const data: AnalyticsData = await response.json();
+        const data = (await response.json()) as AnalyticsData;
+        console.log("data", data);
         setAnalytics(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An unknown error occurred");
@@ -131,7 +179,7 @@ const Dashboard: React.FC = () => {
   if (!analytics)
     return <div className="text-center mt-10 text-gray-400">No data available</div>;
 
-  const calculationsData = {
+  const dailyData = {
     labels: analytics.dailyCalculations.map((entry) => entry._id),
     datasets: [
       {
@@ -142,14 +190,26 @@ const Dashboard: React.FC = () => {
         borderWidth: 2,
         tension: 0.4,
       },
+    ],
+  };
+
+  const weeklyData = {
+    labels: analytics.weeklyCalculations.map((entry) => entry.week),
+    datasets: [
       {
         label: "Weekly Calculations",
-        data: analytics?.weeklyCalculations?.map((entry) => entry?.count),
+        data: analytics.weeklyCalculations.map((entry) => entry.count),
         borderColor: "#36A2EB",
         backgroundColor: "rgba(54, 162, 235, 0.2)",
         borderWidth: 2,
         tension: 0.4,
       },
+    ],
+  };
+
+  const monthlyData = {
+    labels: analytics.monthlyCalculations.map((entry) => entry.month),
+    datasets: [
       {
         label: "Monthly Calculations",
         data: analytics.monthlyCalculations.map((entry) => entry.count),
@@ -158,6 +218,12 @@ const Dashboard: React.FC = () => {
         borderWidth: 2,
         tension: 0.4,
       },
+    ],
+  };
+
+  const yearlyData = {
+    labels: analytics.yearlyCalculations.map((entry) => entry.year),
+    datasets: [
       {
         label: "Yearly Calculations",
         data: analytics.yearlyCalculations.map((entry) => entry.count),
@@ -183,6 +249,20 @@ const Dashboard: React.FC = () => {
     ],
   };
 
+  const dailySignupData = {
+    labels: analytics.dailySignups.map((entry) => entry._id),
+    datasets: [
+      {
+        label: "Daily Signup",
+        data: analytics.dailySignups.map((entry) => entry.count),
+        borderColor: "#6366F1",
+        backgroundColor: "rgba(99, 102, 241, 0.2)",
+        borderWidth: 2,
+        tension: 0.4,
+      },
+    ],
+  };
+
   const calculatorUsageData = {
     labels: analytics.mostUsedCalculators.map((calc) => calc.name),
     datasets: [
@@ -194,53 +274,28 @@ const Dashboard: React.FC = () => {
     ],
   };
 
-  const topUsersData = {
-    labels: analytics.topUsers.map((user) => user.name),
-    datasets: [
-      {
-        label: "Usage Count",
-        data: analytics.topUsers.map((user) => user.usageCount),
-        backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-          "#FF9F40",
-          "#8BC34A",
-          "#E91E63",
-          "#00BCD4",
-          "#FFEB3B",
-        ],
-        hoverBackgroundColor: [
-          "#FF4365",
-          "#2592DB",
-          "#E5B944",
-          "#3AAFA9",
-          "#7D5FFF",
-          "#FF7800",
-          "#6EA036",
-          "#C21858",
-          "#008BA3",
-          "#D4C700",
-        ],
-      },
-    ],
-  };
+  const dateSet = new Set([
+    ...(analytics.dailyUsage?.map((entry) => entry._id) ?? []),
+    ...(analytics.dailyCalculations?.map((entry) => entry._id) ?? []),
+  ]);
+  const allDates = Array.from(dateSet).sort();
+
+  const usageMap = new Map(analytics.dailyUsage?.map((entry) => [entry._id, entry.count]));
+  const calcMap = new Map(analytics.dailyCalculations?.map((entry) => [entry._id, entry.count]));
 
   const userActivityData = {
-    labels: analytics.dailyUsage.map((entry) => entry._id),
+    labels: allDates,
     datasets: [
       {
         label: "Daily Logins",
-        data: analytics.dailyUsage.map((entry) => entry.count),
+        data: allDates.map((date) => usageMap.get(date) || 0),
         backgroundColor: "rgba(99, 102, 241, 0.5)",
         borderColor: "#6366F1",
         borderWidth: 1,
       },
       {
         label: "Daily Calculations",
-        data: analytics.dailyCalculations.map((entry) => entry.count),
+        data: allDates.map((date) => calcMap.get(date) || 0),
         backgroundColor: "rgba(255, 99, 132, 0.5)",
         borderColor: "#FF6384",
         borderWidth: 1,
@@ -248,35 +303,68 @@ const Dashboard: React.FC = () => {
     ],
   };
 
-  const foodDiaryLogsData = {
-    labels: ["Weekly", "Monthly", "Yearly"],
-    datasets: [
-      {
-        label: "Food Diary Logs",
-        data: [
-          analytics.weeklyFoodDiaryLogs,
-          analytics.monthlyFoodDiaryLogs,
-          analytics.yearlyFoodDiaryLogs,
-        ],
-        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"],
-        borderColor: ["#FF4365", "#2592DB", "#E5B944"],
-        borderWidth: 1,
-      },
-    ],
+  const periodicData = {
+    daily: dailyData,
+    weekly: weeklyData,
+    monthly: monthlyData,
+    yearly: yearlyData,
   };
 
-  const calculatorTrendsData = {
-    labels: analytics.mostUsedCalculators.map((calc) => calc.name),
-    datasets: [
-      {
-        label: "Calculator Usage Trend",
-        data: analytics.mostUsedCalculators.map((calc) => calc.trend),
-        borderColor: "#FF5733",
-        backgroundColor: "rgba(255, 87, 51, 0.2)",
-        borderWidth: 2,
-        tension: 0.4,
-      },
-    ],
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" as const }, // Explicitly type 'position'
+      title: { display: true, text: `Calculator Usage - ${selectedRange}` },
+    },
+  };
+
+  const downloadCSV = () => {
+    if (!analytics) return;
+
+    const headers = [
+      "Email",
+      "First Name",
+      "Last Name",
+      "Usage",
+      "Category",
+      "Google ID",
+      "Last Usage Date",
+      "Verified",
+    ];
+
+    const csvRows = [
+      headers.join(","),
+      ...analytics.allUsers.map((user) => {
+        const formattedDate = user.lastUsageDate
+          ? `="${new Date(user.lastUsageDate).toISOString().split("T")[0]}"`
+          : "N/A";
+
+        return [
+          user.email,
+          user.firstName,
+          user.lastName,
+          user.usage,
+          user.category,
+          `="${user.googleId}"`,
+          formattedDate,
+          user.isVerified ? "Yes" : "No",
+        ]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",");
+      }),
+    ];
+
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "all_users.csv";
+    document.body.appendChild(link); // Append to the document so click() works in all browsers
+    link.click();
+    document.body.removeChild(link); // Clean up
+
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -285,101 +373,133 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         <div className="p-4 bg-gray-800 text-white rounded-lg shadow-md">
           <h3 className="text-lg font-semibold">Anthropometric Stats (Weekly)</h3>
-          <p className="text-2xl font-bold">{analytics.anthropometricStats.weekly}</p>
+          <p className="text-2xl font-bold">{analytics?.anthropometricStats?.weekly}</p>
         </div>
         <div className="p-4 bg-gray-800 text-white rounded-lg shadow-md">
           <h3 className="text-lg font-semibold">Total Food Diary Logs</h3>
-          <p className="text-2xl font-bold">{analytics.totalFoodDiaryLogs}</p>
+          <p className="text-2xl font-bold">{analytics?.totalFoodDiaryLogs}</p>
         </div>
         <div className="p-4 bg-gray-800 text-white rounded-lg shadow-md">
           <h3 className="text-lg font-semibold">Total Users</h3>
-          <p className="text-2xl font-bold">{analytics.totalUsers}</p>
+          <p className="text-2xl font-bold">{analytics?.totalUsers}</p>
         </div>
         <div className="p-4 bg-gray-800 text-white rounded-lg shadow-md">
           <h3 className="text-lg font-semibold">Total Anthropometric</h3>
-          <p className="text-2xl font-bold">{analytics.totalAnthropometricCalculations}</p>
+          <p className="text-2xl font-bold">{analytics?.totalAnthropometricCalculations}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-4 shadow-md rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">Daily Calculations Usage</h2>
-          <Line data={calculationsData} />
+          <h2 className="text-lg font-semibold mb-4">Daily Signup Rate</h2>
+          {analytics?.dailySignups && <Line data={dailySignupData} />}
         </div>
         <div className="bg-white p-4 shadow-md rounded-lg">
           <h2 className="text-lg font-semibold mb-4">Daily Usage</h2>
-          <Line data={dailyUsageData} />
+          {analytics?.dailyUsage && <Line data={dailyUsageData} />}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
         <div className="bg-white p-4 shadow-md rounded-lg">
           <h2 className="text-lg font-semibold mb-4">Most Used Calculators</h2>
-          <Bar data={calculatorUsageData} />
+          {analytics?.mostUsedCalculators && <Bar data={calculatorUsageData} />}
         </div>
         <div className="bg-white p-4 shadow-md rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">Top Users</h2>
-          <Pie data={topUsersData} />
+          <h2 className="text-lg font-semibold mb-4">Calculator Usage Over Time</h2>
+          <div className="flex justify-end">
+            <select
+              title="Select Range"
+              className="select select-bordered bg-white"
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value as "daily" | "weekly" | "monthly" | "yearly")}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          {periodicData[selectedRange]?.labels?.length > 0 && (
+            <Line data={periodicData[selectedRange]} options={options} />
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-4 shadow-md rounded-lg">
           <h2 className="text-lg font-semibold mb-4">User Activity Distribution</h2>
-          <Bar data={userActivityData} />
+          {userActivityData?.labels?.length > 0 && <Bar data={userActivityData} />}
         </div>
         <div className="bg-white p-4 shadow-md rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">Food Diary Logs Comparison</h2>
-          <Bar data={foodDiaryLogsData} />
+          <h2 className="text-lg font-semibold mb-4">Food Diary Usage</h2>
+          {chartData?.labels?.length > 0 && <div> <Bar data={chartData} /></div>}
         </div>
       </div>
       <div className="bg-white p-4 shadow-md rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-gray-300 p-2">Rank</th>
-              <th className="border border-gray-300 p-2">User</th>
-              <th className="border border-gray-300 p-2">Usage Count</th>
-              <th className="border border-gray-300 p-2">Last Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analytics.topUsers.map((user, index) => (
-              <tr key={user.id} className="text-center">
-                <td className="border border-gray-300 p-2">{index + 1}</td>
-                <td className="border border-gray-300 p-2">{user.name}</td>
-                <td className="border border-gray-300 p-2">{user.usageCount}</td>
-                <td className="border border-gray-300 p-2">
-                  {new Date(user.lastUsed).toLocaleDateString()}
-                </td>
+        {analytics?.topUsers?.length > 0 ? (
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-300 p-2">Rank</th>
+                <th className="border border-gray-300 p-2">User</th>
+                <th className="border border-gray-300 p-2">Usage Count</th>
+                <th className="border border-gray-300 p-2">Last Active</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {analytics.topUsers.map((user, index) => (
+                <tr key={user.id} className="text-center">
+                  <td className="border border-gray-300 p-2">{index + 1}</td>
+                  <td className="border border-gray-300 p-2">{user.name}</td>
+                  <td className="border border-gray-300 p-2">{user.usageCount}</td>
+                  <td className="border border-gray-300 p-2">
+                    {user.lastUsed ? new Date(user.lastUsed).toLocaleDateString() : "N/A"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>No top users data available.</p>
+        )}
       </div>
       <div className="bg-white p-4 shadow-md rounded-lg">
         <h2 className="text-lg font-semibold mb-4">All Users</h2>
+        <button
+          onClick={downloadCSV}
+          className="px-3 py-1 rounded border border-green-500 text-green-600 hover:bg-green-100 text-sm mb-4"
+        >
+          Export CSV
+        </button>
         <div className="overflow-x-auto">
           <table
             {...getTableProps()}
             className="min-w-full border-collapse border border-gray-300"
           >
             <thead>
-              {headerGroups.map((headerGroup) => (
+              {headerGroups.map((headerGroup: any) => (
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-gray-200">
-                  {headerGroup.headers.map((column) => (
+                  {headerGroup.headers.map((column: any) => (
                     <th
-                      {...column.getHeaderProps()}
-                      className="border border-gray-300 p-2"
+                      {...column.getHeaderProps(column.getSortByToggleProps())}
+                      className="border border-gray-300 p-2 cursor-pointer select-none hover:bg-gray-100"
                     >
                       {column.render("Header")}
+                      <span>
+                        {column.isSorted
+                          ? column.isSortedDesc
+                            ? " 🔽"
+                            : " 🔼"
+                          : ""}
+                      </span>
                     </th>
                   ))}
                 </tr>
               ))}
             </thead>
             <tbody {...getTableBodyProps()}>
-              {page.map((row) => { // Use 'page' instead of 'rows'
+              {page.map((row: Row<UserData>) => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} className="text-center">
@@ -396,43 +516,106 @@ const Dashboard: React.FC = () => {
         </div>
         {/* Pagination Controls */}
         <div className="mt-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
-              {"<<"}
+          <div className="flex items-center space-x-2">
+            {/* First Page */}
+            <button
+              onClick={() => gotoPage(0)}
+              disabled={!canPreviousPage}
+              className={`px-3 py-1 rounded border ${canPreviousPage ? "border-blue-500 text-blue-500 hover:bg-blue-100" : "border-gray-300 text-gray-400 cursor-not-allowed"
+                }`}
+            >
+              First
             </button>
-            <button onClick={() => previousPage()} disabled={!canPreviousPage}>
-              {"<"}
+
+            {/* Previous Page */}
+            <button
+              onClick={() => previousPage()}
+              disabled={!canPreviousPage}
+              className={`px-3 py-1 rounded border ${canPreviousPage ? "border-blue-500 text-blue-500 hover:bg-blue-100" : "border-gray-300 text-gray-400 cursor-not-allowed"
+                }`}
+            >
+              Previous
             </button>
-            <button onClick={() => nextPage()} disabled={!canNextPage}>
-              {">"}
-            </button>
-            <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
-              {">>"}
-            </button>
-            <span className="ml-2">
+
+            {/* Page Number Indicator */}
+            <span className="text-sm">
               Page {pageIndex + 1} of {pageOptions.length}
             </span>
+
+            {/* Next Page */}
+            <button
+              onClick={() => nextPage()}
+              disabled={!canNextPage}
+              className={`px-3 py-1 rounded border ${canNextPage ? "border-blue-500 text-blue-500 hover:bg-blue-100" : "border-gray-300 text-gray-400 cursor-not-allowed"
+                }`}
+            >
+              Next
+            </button>
+
+            {/* Last Page */}
+            <button
+              onClick={() => gotoPage(pageCount - 1)}
+              disabled={!canNextPage}
+              className={`px-3 py-1 rounded border ${canNextPage ? "border-blue-500 text-blue-500 hover:bg-blue-100" : "border-gray-300 text-gray-400 cursor-not-allowed"
+                }`}
+            >
+              Last
+            </button>
           </div>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-            }}
-            className="border border-gray-300 rounded p-1"
-          >
-            {[10, 20, 30, 40, 50].map((pageSize) => (
-              <option key={pageSize} value={pageSize}>
-                Show {pageSize}
-              </option>
-            ))}
-          </select>
+
+          {/* Page Size Selector */}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="pageSizeSelect" className="text-sm">
+              Items per page:
+            </label>
+            <select
+              id="pageSizeSelect"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+              }}
+              className="border border-gray-300 rounded p-1 text-sm bg-white" // Added bg-white for better contrast
+            >
+              {[10, 20, 30, 40, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div className="bg-white p-4 shadow-md rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">Calculator Usage Trends</h2>
-          <Line data={calculatorTrendsData} />
-        </div>
+      <div className="bg-white p-4 shadow-md rounded-lg mb-6">
+        <h2 className="text-lg font-semibold mb-4">Top Anthropometric Users</h2>
+        {analytics?.userCalculations?.length > 0 ? (
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-300 p-2">Rank</th>
+                <th className="border border-gray-300 p-2">User</th>
+                <th className="border border-gray-300 p-2">Usage Count</th>
+                <th className="border border-gray-300 p-2">Last Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analytics.userCalculations.map((user, index) => {
+                const lastActiveTime = Math.max(...(user.calculations?.map(calc => new Date(calc.date).getTime()) || [0]));
+                const lastActive = lastActiveTime > 0 ? new Date(lastActiveTime).toLocaleDateString() : "N/A";
+
+                return (
+                  <tr key={user.id} className="text-center">
+                    <td className="border border-gray-300 p-2">{index + 1}</td>
+                    <td className="border border-gray-300 p-2">{user.name}</td>
+                    <td className="border border-gray-300 p-2">{user.totalCalculations}</td>
+                    <td className="border border-gray-300 p-2">{lastActive}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <p>No anthropometric user data available.</p>
+        )}
       </div>
     </div>
   );
