@@ -64,6 +64,7 @@ type AnalyticsData = {
   yearlyFoodDiaryLogs: number;
   totalUsers: number;
   totalAnthropometricCalculations: number;
+  newsletterSubscribers?: { email: string }[];
 };
 
 const Dashboard: React.FC = () => {
@@ -320,6 +321,21 @@ const Dashboard: React.FC = () => {
 
   const downloadCSV = () => {
     if (!analytics) return;
+    console.log('newsletter', analytics.newsletterSubscribers);
+
+    const newsletterData = (analytics.newsletterSubscribers || []).map((sub) => ({
+      email: sub.email,
+      firstName: 'guest',
+      lastName: 'guest',
+      usage: 0,
+      category: 0,
+      googleId: 'guest',
+      lastUsageDate: null,
+      isVerified: false,
+    }));
+
+    const mergedData = [...analytics.allUsers, ...newsletterData];
+    console.log('merged', mergedData);
 
     const headers = [
       "Email",
@@ -334,7 +350,7 @@ const Dashboard: React.FC = () => {
 
     const csvRows = [
       headers.join(","),
-      ...analytics.allUsers.map((user) => {
+      ...mergedData.map((user) => {
         const formattedDate = user.lastUsageDate
           ? `="${new Date(user.lastUsageDate).toISOString().split("T")[0]}"`
           : "N/A";
