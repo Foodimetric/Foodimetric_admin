@@ -44,6 +44,7 @@ type UserData = {
   firstName: string;
   lastName: string;
   isVerified: boolean;
+  credits: number;
 };
 
 type AnalyticsData = {
@@ -80,6 +81,7 @@ const Dashboard: React.FC = () => {
       { Header: "Usage", accessor: "usage" },
       { Header: "Category", accessor: "category" },
       { Header: "Google ID", accessor: "googleId" },
+      { Header: "Credits", accessor: "credits" },
       {
         Header: "Last Usage Date",
         accessor: "lastUsageDate",
@@ -328,6 +330,7 @@ const Dashboard: React.FC = () => {
       firstName: 'guest',
       lastName: 'guest',
       usage: 0,
+      credits: 0,
       category: 0,
       googleId: 'guest',
       lastUsageDate: null,
@@ -342,6 +345,7 @@ const Dashboard: React.FC = () => {
       "First Name",
       "Last Name",
       "Usage",
+      "Credits",
       "Category",
       "Google ID",
       "Last Usage Date",
@@ -360,6 +364,7 @@ const Dashboard: React.FC = () => {
           user.firstName,
           user.lastName,
           user.usage,
+          user.credits,
           user.category,
           `="${user.googleId}"`,
           formattedDate,
