@@ -69,10 +69,12 @@ type AnalyticsData = {
 };
 
 const Dashboard: React.FC = () => {
+
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [selectedRange, setSelectedRange] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const isFirstDay = new Date().getDate() === 1;
   const columns = useMemo<Column<UserData>[]>(
     () => [
       { Header: "Email", accessor: "email" },
@@ -176,6 +178,52 @@ const Dashboard: React.FC = () => {
 
     fetchAnalytics();
   }, []);
+
+  const monthlyCredit = async () => {
+    if (!isFirstDay) {
+      alert("⚠️ This action can only be performed on the 1st day of the month.");
+      return;
+    }
+
+    const confirmReset = window.confirm(
+      "⚠️ WARNING: This will reset all verified users’ credits to 1000. Are you sure you want to continue?"
+    );
+    if (!confirmReset) return;
+
+    const user_token = localStorage.getItem("authToken");
+    if (!user_token) {
+      alert("No authentication token found. Please log in.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${FOODIMETRIC_HOST_URL}/admin/dashboard/reset-credits`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || "Something went wrong");
+      }
+
+      const data = await response.json();
+      alert(data.message || "Credits reset successfully.");
+    } catch (error) {
+      console.error("Error resetting credits:", error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred while resetting credits.");
+      }
+    }
+  };
 
   if (loading) return <div className="text-center mt-10 text-white">Loading...</div>;
   if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
@@ -647,6 +695,24 @@ const Dashboard: React.FC = () => {
         ) : (
           <p>No anthropometric user data available.</p>
         )}
+      </div>
+      <div className="mt-8 p-4 border border-red-400 rounded-lg bg-red-50">
+        <h3 className="text-red-700 font-bold text-lg mb-2">Danger Zone</h3>
+        <p className="text-red-600 mb-4">
+          Clicking this button will reset all verified users’ credits to 1000. This action is irreversible.
+          <br />
+          <strong>This button can only be used on the 1st day of the month.</strong>
+        </p>
+        <button
+          onClick={monthlyCredit}
+          disabled={!isFirstDay}
+          className={`${isFirstDay
+            ? "bg-red-600 hover:bg-red-700"
+            : "bg-gray-400 cursor-not-allowed"
+            } text-white font-semibold px-6 py-2 rounded shadow`}
+        >
+          Reset All User Credits to 1000
+        </button>
       </div>
     </div>
   );
