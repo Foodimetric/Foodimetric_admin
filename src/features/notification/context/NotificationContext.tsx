@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { AdminNotification, NotificationType } from "../types/notification";
+import { AdminNotification } from "../types/notification";
 
 interface NotificationContextType {
   notifications: AdminNotification[];
