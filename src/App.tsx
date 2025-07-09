@@ -11,6 +11,8 @@ import { PromoCodePage } from "./features/promo-codes/pages/PromoCodePage";
 import { ActivityLogPage } from "./features/activity-logs/pages/ActivityLogPage";
 import { ActivityLogProvider } from "./features/activity-logs/context/ActivityLogContext";
 import { NotificationPage } from "./features/notification/pages/NotificationPage";
+// import Dashboard from "./pages/Dashboard";
+// import Login from "./pages/Login";
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
               element={<div className="text-xl font-bold">Admin Settings</div>}
             />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* <Route path="/test" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} /> */}
           </Routes>
         </ActivityLogProvider>
       </AdminLayout>

@@ -9,7 +9,7 @@ const navItems = [
   { name: "Analytics", path: "/analytics" },
   { name: "Promo Codes", path: "/promo-codes" },
   { name: "Activity Logs", path: "/activity-logs" },
-  { name: "Notifications", path: "/notifications" },
+  { name: "Notifications", path: "/notification" },
 
   { name: "Settings", path: "/settings" },
 ];

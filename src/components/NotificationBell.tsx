@@ -11,7 +11,7 @@ export const NotificationBell = () => {
   return (
     <div
       className="relative ml-4 cursor-pointer"
-      onClick={() => navigate("/notifications")}
+      onClick={() => navigate("/notification")}
     >
       <Bell className="w-6 h-6 text-gray-700" />
       {unreadCount > 0 && (
