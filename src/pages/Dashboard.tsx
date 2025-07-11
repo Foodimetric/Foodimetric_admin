@@ -436,6 +436,49 @@ const Dashboard: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const extractMessages = async () => {
+    const user_token = localStorage.getItem("authToken");
+
+    try {
+      const response = await fetch(
+        `${FOODIMETRIC_HOST_URL}/admin/messages`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || "Failed to fetch messages");
+      }
+
+      const data = await response.json();
+      const messages = data?.messages || [];
+
+      // Extract only the text fields
+      const messageTexts = messages.map((msg: any) => msg.text).join("\n");
+
+      // Create a Blob and trigger download
+      const blob = new Blob([messageTexts], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "messages.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert("Messages downloaded successfully.");
+    } catch (error: any) {
+      console.error("Error extracting messages:", error);
+      alert(error.message || "An unknown error occurred.");
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-white p-6 text-black">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
@@ -540,6 +583,12 @@ const Dashboard: React.FC = () => {
           className="px-3 py-1 rounded border border-green-500 text-green-600 hover:bg-green-100 text-sm mb-4"
         >
           Export CSV
+        </button>
+        <button
+          onClick={extractMessages}
+          className="px-3 py-1 rounded border border-green-500 text-green-600 hover:bg-green-100 text-sm mb-4"
+        >
+          Export Message
         </button>
         <div className="overflow-x-auto">
           <table
