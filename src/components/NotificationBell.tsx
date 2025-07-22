@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useNotification } from "../features/notification/context/NotificationContext";
+import { useNotification } from "../pages/Notification/context/NotificationContext";
 
 export const NotificationBell = () => {
   const { notifications } = useNotification();

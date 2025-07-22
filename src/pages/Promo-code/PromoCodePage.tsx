@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { PromoCodeGenerator } from "../components/PromoCodeGenerator";
-import { PromoCodeTable } from "../components/PromoCodeTable";
-import { PromoCode } from "../types/promoCode";
+import { PromoCodeGenerator } from "./components/PromoCodeGenerator";
+import { PromoCodeTable } from "./components/PromoCodeTable";
+import { PromoCode } from "./types/promoCode";
 
 export const PromoCodePage = () => {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);

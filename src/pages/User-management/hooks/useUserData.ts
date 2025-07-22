@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User } from "../types/user";
+import { User } from "../../../pages/User-management/types/user";
 
 export const useUserData = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -10,14 +10,16 @@ export const useUserData = () => {
     setTimeout(() => {
       setUsers([
         {
-          id: "1",
-          name: "Jane Doe",
-          email: "jane@example.com",
-          role: "dietitian",
-          status: "active",
-          foodiPoints: 120,
-          expirationDate: "2025-12-31",
-          lastLogin: "2025-07-05",
+          id: 1,
+          firstName: "User",
+          lastName: "One",
+          email: "user1@example.com",
+          usage: 120,
+          category: 1,
+          googleId: "google-uid-1",
+          credits: 500,
+          lastUsageDate: "2025-07-20",
+          verified: true,
         },
       ]);
       setIsLoading(false);

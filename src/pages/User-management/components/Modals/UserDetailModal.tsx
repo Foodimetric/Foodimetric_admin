@@ -1,5 +1,5 @@
-import { User } from "../types/user";
-import { X } from "lucide-react";
+import { User } from "../../types/user";
+import { X, CircleCheckBig } from "lucide-react";
 
 interface Props {
   user: User;
@@ -94,7 +94,7 @@ export const UserDetailModal = ({ user, onClose }: Props) => {
                 </p>
                 <p>
                   <strong>Verified:</strong>{" "}
-                  {user.verified ? "✅ Yes" : "❌ No"}
+                  {user.verified ? `✅ Yes` : "❌ No"}
                 </p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">

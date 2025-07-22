@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CreditAdjustModal } from "../features/user-management/components/CreditAdjustModal";
-import { User } from "../features/user-management/types/user";
-import { UserDetailModal } from "../features/user-management/components/UserDetailModal";
-import { UserOptionsMenu } from "../features/user-management/components/UserOptionsMenu";
+import { CreditAdjustModal } from "./Modals/CreditAdjustModal";
+import { User } from "../types/user";
+import { UserDetailModal } from "./Modals/UserDetailModal";
+import { UserOptionsMenu } from "./UserOptionsMenu";
 
 // interface TableProps {
 //   data: User[];

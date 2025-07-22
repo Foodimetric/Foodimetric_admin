@@ -1,5 +1,5 @@
 import { useState } from "react";
-import foodimetricLogo from "../assets/logo-alt.png"; // Adjust path as needed
+import foodimetricLogo from "/img/logo.png"; // Adjust path as needed
 
 const FOODIMETRIC_HOST_URL = "https://foodimetric-backend.onrender.com";
 

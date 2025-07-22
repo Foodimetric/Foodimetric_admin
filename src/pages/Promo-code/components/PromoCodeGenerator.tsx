@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { PromoCode } from "../types/promoCode";
-import { useActivityLog } from "../../activity-logs/context/ActivityLogContext";
+import { useActivityLog } from "../../Activity-log/context/ActivityLogContext";
 
 function generatePromoCode(): string {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

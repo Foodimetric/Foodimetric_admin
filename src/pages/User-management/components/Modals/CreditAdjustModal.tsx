@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { User } from "../types/user";
 import toast from "react-hot-toast";
+import { User } from "../../types/user";
 
 interface Props {
   user: User;
@@ -12,7 +12,7 @@ export const CreditAdjustModal = ({ user, onClose }: Props) => {
   const [reason, setReason] = useState("");
 
   const handleSubmit = () => {
-    toast.success(`Successfully adjusted ${amount} points for ${user.name}`, {
+    toast.success(`Successfully adjusted ${amount} points for ${user.firstName}${user.lastName}`, {
       icon: "💰",
     });
     onClose();
@@ -22,7 +22,7 @@ export const CreditAdjustModal = ({ user, onClose }: Props) => {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md">
         <h2 className="text-lg font-bold mb-4">Adjust Foodipoints</h2>
-        <p className="mb-2">User: {user.name}</p>
+        <p className="mb-2">User: {user.firstName} { user.lastName}</p>
         <input
           type="number"
           className="w-full border p-2 rounded mb-2"

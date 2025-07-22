@@ -1,4 +1,4 @@
-import { ActivityLogTable } from "../components/ActivityLogTable";
+import { ActivityLogTable } from "./components/ActivityLogTable";
 
 export const ActivityLogPage = () => {
   return (

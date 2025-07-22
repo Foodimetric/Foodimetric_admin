@@ -1,4 +1,4 @@
-import { NotificationPanel } from "../components/NotificationPanel";
+import { NotificationPanel } from "./components/NotificationPanel";
 
 export const NotificationPage = () => {
   return (

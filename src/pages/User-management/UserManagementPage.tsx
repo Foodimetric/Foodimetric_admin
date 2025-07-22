@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { SearchBar } from "../../../components/SearchBar";
-import { Table } from "../../../components/Table";
-import { useUserData } from "../hooks/useUserData";
-import { dummyUsers } from "../types/user";
+import { SearchBar } from "./components/SearchBar";
+import { Table } from "./components/Table";
+import { dummyUsers } from "./types/user";
+import { useUserData } from "./hooks/useUserData";
 
 export const UserManagementPage = () => {
   const { isLoading } = useUserData();

@@ -4,41 +4,45 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { UserManagementPage } from "./features/user-management/pages/UserManagementPage";
+import { UserManagementPage } from "./pages/User-management/UserManagementPage";
 import AdminLayout from "./layouts/AdminLayout";
-import { PromoCodePage } from "./features/promo-codes/pages/PromoCodePage";
-import { ActivityLogPage } from "./features/activity-logs/pages/ActivityLogPage";
-import { ActivityLogProvider } from "./features/activity-logs/context/ActivityLogContext";
-import { NotificationPage } from "./features/notification/pages/NotificationPage";
-// import Dashboard from "./pages/Dashboard";
+import { PromoCodePage } from "./pages/Promo-code/PromoCodePage";
+import { ActivityLogPage } from "./pages/Activity-log/ActivityLogPage";
+import { ActivityLogProvider } from "./pages/Activity-log/context/ActivityLogContext";
+import { NotificationPage } from "./pages/Notification/NotificationPage";
 import Login from "./pages/Login";
-import { Dashboard } from "./features/analytics/pages/Dashboard";
+import { Dashboard } from "./pages/Dashboard/Dashboard";
+import { AdminSettings } from "./pages/Settings/AdminSettings";
 
 function App() {
   return (
     <Router>
-      <AdminLayout>
-        <ActivityLogProvider>
-          <Routes>
-            <Route path="/users" element={<UserManagementPage />} />
-            <Route
-              path="/dashboard"
-              element={<Dashboard /> }
-            />
-            {/* <Route path="/analytics" element={<AnalyticsPage />} /> */}
-            <Route path="/promo-codes" element={<PromoCodePage />} />
-            <Route path="/activity-logs" element={<ActivityLogPage />} />
-            <Route path="/notification" element={<NotificationPage />} />
-            <Route
-              path="/settings"
-              element={<div className="text-xl font-bold">Admin Settings</div>}
-            />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/test" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </ActivityLogProvider>
-      </AdminLayout>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+
+        <Route
+          path="/*"
+          element={
+            <AdminLayout>
+              <ActivityLogProvider>
+                <Routes>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/users" element={<UserManagementPage />} />
+                  <Route path="/promo-codes" element={<PromoCodePage />} />
+                  <Route path="/activity-logs" element={<ActivityLogPage />} />
+                  <Route path="/notification" element={<NotificationPage />} />
+                  <Route path="/settings" element={<AdminSettings />} />
+                  <Route path="/test" element={<Dashboard />} />
+                  <Route
+                    path="*"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                </Routes>
+              </ActivityLogProvider>
+            </AdminLayout>
+          }
+        />
+      </Routes>
     </Router>
   );
 }
