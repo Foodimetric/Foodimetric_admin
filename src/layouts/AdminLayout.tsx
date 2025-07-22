@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
-  BarChart2,
   Percent,
   ListOrdered,
   Bell,

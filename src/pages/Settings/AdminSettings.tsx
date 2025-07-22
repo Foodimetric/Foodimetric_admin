@@ -6,7 +6,6 @@ import {
   RefreshCcw,
   ShieldAlert,
   Trash2,
-  ShieldCheck,
 } from "lucide-react";
 
 export const AdminSettings = ({ isSuperAdmin = false }) => {

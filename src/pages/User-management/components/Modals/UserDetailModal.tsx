@@ -1,5 +1,5 @@
 import { User } from "../../types/user";
-import { X, CircleCheckBig } from "lucide-react";
+import { X } from "lucide-react";
 
 interface Props {
   user: User;
