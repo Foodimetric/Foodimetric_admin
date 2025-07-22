@@ -1,9 +1,9 @@
-interface Props {
+interface SearchBarProps {
   placeholder?: string;
-  onSearch: (term: string) => void;
+  onSearch: (value: string) => void;
 }
 
-export const SearchBar = ({ placeholder, onSearch }: Props) => {
+export const SearchBar = ({ placeholder, onSearch }: SearchBarProps) => {
   return (
     <input
       type="text"

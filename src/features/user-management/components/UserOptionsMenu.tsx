@@ -1,53 +1,54 @@
-import { useState } from "react";
 import { User } from "../types/user";
-import toast from "react-hot-toast";
 
-interface Props {
+// interface Props {
+//   user: User;
+//   onViewDetails: (user: User) => void;
+//   onAdjustPoints: (user: User) => void;
+// }
+
+export const UserOptionsMenu = ({
+  user,
+  isOpen,
+  onToggle,
+  onViewDetails,
+  onAdjustPoints,
+}: {
   user: User;
+  isOpen: boolean;
+  onToggle: () => void;
   onViewDetails: (user: User) => void;
-}
-
-export const UserOptionsMenu = ({ user, onViewDetails }: Props) => {
-  const [open, setOpen] = useState(false);
-
-  const handleAction = (action: string) => {
-    toast.success(`${action} action for ${user.name}`);
-    setOpen(false);
-  };
-
+  onAdjustPoints: (user: User) => void;
+}) => {
   return (
     <div className="relative">
       <button
-        className="px-2 py-1 text-gray-600 hover:text-black"
-        onClick={() => setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className="px-3 py-1 bg-gray-100 rounded"
       >
         ⋮
       </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-10">
+      {isOpen && (
+        <div className="absolute right-0 mt-2 bg-white shadow-lg rounded w-40 z-10 border text-sm">
           <button
-            onClick={() => onViewDetails(user)}
+            onClick={() => {
+              onViewDetails(user);
+              onToggle();
+            }}
             className="block w-full px-4 py-2 text-left hover:bg-gray-100"
           >
             View Details
           </button>
           <button
-            onClick={() => handleAction("Activate")}
+            onClick={() => {
+              onAdjustPoints(user);
+              onToggle();
+            }}
             className="block w-full px-4 py-2 text-left hover:bg-gray-100"
           >
-            Activate
-          </button>
-          <button
-            onClick={() => handleAction("Suspend")}
-            className="block w-full px-4 py-2 text-left hover:bg-gray-100"
-          >
-            Suspend
-          </button>
-          <button
-            onClick={() => handleAction("Delete")}
-            className="block w-full px-4 py-2 text-left hover:bg-red-100 text-red-600"
-          >
-            Delete Account
+            Adjust Points
           </button>
         </div>
       )}
