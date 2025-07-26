@@ -1,4 +1,4 @@
-import { Users, NotebookText, ChefHat, Ruler, LineChart } from "lucide-react";
+import { Users, NotebookText, Ruler, LineChart } from "lucide-react";
 
 const cards = [
   {
