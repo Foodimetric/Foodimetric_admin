@@ -9,6 +9,7 @@ import {
   Settings,
   Menu,
   LogOut,
+  BotMessageSquare,
 } from "lucide-react";
 import clsx from "clsx";
 import { NotificationBell } from "../components/NotificationBell";
@@ -16,12 +17,18 @@ import { NotificationBell } from "../components/NotificationBell";
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Users", path: "/users", icon: Users },
-  // { name: "Analytics", path: "/analytics", icon: BarChart2 },
+  {
+    name: "AI Chats",
+    path: "/ai-chats",
+    icon: BotMessageSquare,
+    subNav: [{ name: "Custom Prompt", path: "/ai-chats/custom-prompt" }],
+  },
   { name: "Promo Codes", path: "/promo-codes", icon: Percent },
   { name: "Activity Logs", path: "/activity-logs", icon: ListOrdered },
   { name: "Notifications", path: "/notification", icon: Bell },
   { name: "Settings", path: "/settings", icon: Settings },
 ];
+
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
@@ -45,21 +52,50 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
           className="mt-4"
         />
         <nav className="space-y-2">
-          {navItems.map(({ name, path, icon: Icon }) => (
-            <Link
-              key={name}
-              to={path}
-              onClick={closeSidebar}
-              className={clsx(
-                "flex items-center gap-3 px-4 py-3 rounded-2xl text-base",
-                location.pathname === path
-                  ? "bg-blue-100 text-blue-700 font-medium"
-                  : "text-gray-700 hover:bg-gray-100"
+          {navItems.map(({ name, path, icon: Icon, subNav }) => (
+            <div key={name}>
+              <Link
+                to={path}
+                onClick={closeSidebar}
+                className={clsx(
+                  "flex items-center gap-3 px-4 py-3 rounded-2xl text-base transition-all",
+                  location.pathname.startsWith(path)
+                    ? "bg-blue-100 text-blue-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <Icon size={18} />
+                <span>{name}</span>
+              </Link>
+
+              {subNav && location.pathname.startsWith(path) && (
+                <div className="relative ml-6 mt-2">
+                  <div className="absolute left-0 top-0 w-4 h-4">
+                    <div className="w-0.5 h-full bg-blue-300 absolute left-1.5 top-0" />
+                    <div className="w-2 h-0.5 bg-blue-300 absolute top-3 left-1.5" />
+                  </div>
+                  <div className="absolute left-4 top-[7px] w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow" />
+
+                  <div className="ml-4 space-y-1 pl-4">
+                    {subNav.map((sub) => (
+                      <Link
+                        key={sub.name}
+                        to={sub.path}
+                        onClick={closeSidebar}
+                        className={clsx(
+                          "block text-sm px-3 py-1 rounded-md transition-all",
+                          location.pathname === sub.path
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : "text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               )}
-            >
-              <Icon size={18} />
-              <span>{name}</span>
-            </Link>
+            </div>
           ))}
         </nav>
       </div>

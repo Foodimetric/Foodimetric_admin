@@ -42,10 +42,38 @@ const dailySignups = Array.from({ length: 8 }, (_, i) => {
   };
 });
 
-const dailyUsage = dailySignups.map(({ date }) => ({
-  date,
-  usage: Math.floor(Math.random() * 500) + 300,
-}));
+const generateUsageData = (period: string) => {
+  if (period === "Daily") {
+    return Array.from({ length: 8 }, (_, i) => ({
+      date: `July ${15 + i}`,
+      usage: Math.floor(Math.random() * 500) + 300,
+    }));
+  } else if (period === "Weekly") {
+    return Array.from({ length: 6 }, (_, i) => ({
+      date: `Week ${i + 1}`,
+      usage: Math.floor(Math.random() * 2000) + 800,
+    }));
+  } else if (period === "Monthly") {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+    ];
+    return months.map((month) => ({
+      date: month,
+      usage: Math.floor(Math.random() * 5000) + 2000,
+    }));
+  } else {
+    return [2021, 2022, 2023, 2024, 2025].map((year) => ({
+      date: `${year}`,
+      usage: Math.floor(Math.random() * 12000) + 5000,
+    }));
+  }
+};
 
 const mostUsedCalculators = [
   { calculator: "BMI", count: 560 },
@@ -132,7 +160,11 @@ export const AnalyticsDashboard = () => {
   const [period, setPeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
+  const [usagePeriod, setUsagePeriod] = useState<
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
+  >("Daily");
   const calculatorTrends = generateCalculatorTrends(period);
+  const usageData = generateUsageData(usagePeriod);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
@@ -201,9 +233,21 @@ export const AnalyticsDashboard = () => {
 
       {/* Daily Usage */}
       <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-lg font-semibold mb-2">Daily Usage</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold">{usagePeriod} Usage</h2>
+          <select
+            className="border px-2 py-1 rounded text-sm"
+            value={usagePeriod}
+            onChange={(e) => setUsagePeriod(e.target.value as any)}
+          >
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={dailyUsage}>
+          <BarChart data={usageData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />

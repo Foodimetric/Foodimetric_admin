@@ -1,20 +1,31 @@
 import { useState } from "react";
-import { Switch } from "@headlessui/react";
-import {
-  Save,
-  Settings,
-  RefreshCcw,
-  ShieldAlert,
-  Trash2,
-} from "lucide-react";
+import toast from "react-hot-toast";
+import { Settings } from "lucide-react";
+import { GeneralSettings } from "./GeneralSettings";
+import { UserManagement } from "./UserManagement";
+import { CreateUserModal } from "./CreateUserModal";
+import { Actions } from "./Actions";
 
-export const AdminSettings = ({ isSuperAdmin = false }) => {
+export const AdminSettings = ({ isSuperAdmin = true }) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [userRegistration, setUserRegistration] = useState(true);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState("admin");
+  const [showModal, setShowModal] = useState(false);
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success(`Login credentials sent to ${newEmail}`);
+    setShowModal(false);
+    setNewEmail("");
+    setNewPassword("");
+    setNewRole("admin");
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="flex justify-between items-center mb-4">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
           <Settings className="text-blue-600" /> Admin Settings
         </h1>
@@ -29,83 +40,28 @@ export const AdminSettings = ({ isSuperAdmin = false }) => {
         </div>
       </div>
 
-      {/* General Settings */}
-      <div className="bg-white rounded-xl shadow p-6 space-y-6">
-        <h2 className="text-xl font-semibold text-gray-800">
-          General Settings
-        </h2>
+      <GeneralSettings
+        maintenanceMode={maintenanceMode}
+        userRegistration={userRegistration}
+        setMaintenanceMode={setMaintenanceMode}
+        setUserRegistration={setUserRegistration}
+      />
 
-        <div className="flex items-center justify-between">
-          <span className="text-gray-700 font-medium">
-            Enable Maintenance Mode
-          </span>
-          <Switch
-            checked={maintenanceMode}
-            onChange={setMaintenanceMode}
-            className={`${
-              maintenanceMode ? "bg-red-500" : "bg-gray-300"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-          >
-            <span
-              className={`${
-                maintenanceMode ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-            />
-          </Switch>
-        </div>
+      {isSuperAdmin && <UserManagement onAdd={() => setShowModal(true)} />}
+      <Actions />
 
-        <div className="flex items-center justify-between">
-          <span className="text-gray-700 font-medium">
-            Allow User Registration
-          </span>
-          <Switch
-            checked={userRegistration}
-            onChange={setUserRegistration}
-            className={`${
-              userRegistration ? "bg-green-500" : "bg-gray-300"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-          >
-            <span
-              className={`${
-                userRegistration ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-            />
-          </Switch>
-        </div>
-
-        <button className="mt-4 w-full bg-blue-600 text-white py-3 rounded-lg flex justify-center items-center gap-2 hover:bg-blue-700 transition">
-          <Save size={18} /> Save Settings
-        </button>
-      </div>
-
-      {/* Security Actions */}
-      <div className="bg-white rounded-xl shadow p-6 space-y-5">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Security Actions
-        </h2>
-
-        <button className="w-full py-3 px-4 bg-orange-500 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-orange-600 transition">
-          <RefreshCcw size={18} /> Refresh All Tokens
-        </button>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-red-700 flex items-center gap-2">
-          <ShieldAlert className="text-red-600" /> Danger Zone
-        </h2>
-        <p className="text-sm text-red-600 leading-relaxed">
-          Clicking this button will reset all verified users’ credits to{" "}
-          <b>1000</b>.
-          <br /> This action is <span className="font-bold">
-            irreversible
-          </span>{" "}
-          and can only be used on the <b>1st day of the month</b>.
-        </p>
-        <button className="w-full py-3 px-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition">
-          <Trash2 size={18} /> Reset All User Credits to 1000
-        </button>
-      </div>
+      {showModal && (
+        <CreateUserModal
+          email={newEmail}
+          password={newPassword}
+          role={newRole}
+          setEmail={setNewEmail}
+          setPassword={setNewPassword}
+          setRole={setNewRole}
+          onClose={() => setShowModal(false)}
+          onSubmit={handleCreateUser}
+        />
+      )}
     </div>
   );
 };

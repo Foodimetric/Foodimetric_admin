@@ -13,6 +13,8 @@ import { NotificationPage } from "./pages/Notification/NotificationPage";
 import Login from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { AdminSettings } from "./pages/Settings/AdminSettings";
+import { AIChatDashboard } from "./pages/AI-chats/aiChats";
+import { CustomPrompts } from "./pages/AI-chats/customPrompt";
 
 function App() {
   return (
@@ -28,6 +30,11 @@ function App() {
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/users" element={<UserManagementPage />} />
+                  <Route path="/ai-chats" element={<AIChatDashboard />} />
+                  <Route
+                    path="/ai-chats/custom-prompt"
+                    element={<CustomPrompts />}
+                  />
                   <Route path="/promo-codes" element={<PromoCodePage />} />
                   <Route path="/activity-logs" element={<ActivityLogPage />} />
                   <Route path="/notification" element={<NotificationPage />} />

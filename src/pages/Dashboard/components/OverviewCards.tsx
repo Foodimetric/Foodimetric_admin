@@ -29,18 +29,18 @@ const cards = [
     color: "bg-amber-100",
     bg: "bg-amber-50",
   },
-  {
-    label: "Top Meal",
-    value: "Jollof Rice",
-    icon: <ChefHat className="text-pink-700" size={24} />,
-    color: "bg-pink-100",
-    bg: "bg-pink-50",
-  },
+  // {
+  //   label: "Top Meal",
+  //   value: "Jollof Rice",
+  //   icon: <ChefHat className="text-pink-700" size={24} />,
+  //   color: "bg-pink-100",
+  //   bg: "bg-pink-50",
+  // },
 ];
 
 export const OverviewCards = () => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
       {cards.map((card) => (
         <div
           key={card.label}

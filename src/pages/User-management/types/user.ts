@@ -13,9 +13,9 @@ export interface User {
   verified: boolean;
 }
 
-export const ITEMS_PER_PAGE = 10;
+export const ITEMS_PER_PAGE = 12;
 
-export const dummyUsers: User[] = Array.from({ length: 50 }, (_, i) => ({
+export const dummyUsers: User[] = Array.from({ length: 60 }, (_, i) => ({
   id: i + 1,
   email: `user${i + 1}@mail.com`,
   firstName: `User${i + 1}`,
