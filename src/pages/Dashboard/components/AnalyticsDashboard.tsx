@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -17,163 +17,208 @@ import {
   Legend,
   ComposedChart,
 } from "recharts";
-
-const data = [
-  { name: "Jane", foodiPoints: 300 },
-  { name: "John", foodiPoints: 700 },
-  { name: "Emma", foodiPoints: 450 },
-  { name: "Liam", foodiPoints: 650 },
-];
-
-const roleData = [
-  { name: "Dietitian", value: 540 },
-  { name: "Lecturer", value: 680 },
-  { name: "Student", value: 303 },
-  { name: "Others", value: 100 },
-];
+import { useAnalytics } from "../../Hooks/useAnalytics";
 
 const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"];
 
-const dailySignups = Array.from({ length: 8 }, (_, i) => {
-  const day = 15 + i;
-  return {
-    date: `July ${day}`,
-    signups: Math.floor(Math.random() * 100) + 50,
-  };
-});
-
-const generateUsageData = (period: string) => {
-  if (period === "Daily") {
-    return Array.from({ length: 8 }, (_, i) => ({
-      date: `July ${15 + i}`,
-      usage: Math.floor(Math.random() * 500) + 300,
-    }));
-  } else if (period === "Weekly") {
-    return Array.from({ length: 6 }, (_, i) => ({
-      date: `Week ${i + 1}`,
-      usage: Math.floor(Math.random() * 2000) + 800,
-    }));
-  } else if (period === "Monthly") {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-    ];
-    return months.map((month) => ({
-      date: month,
-      usage: Math.floor(Math.random() * 5000) + 2000,
-    }));
-  } else {
-    return [2021, 2022, 2023, 2024, 2025].map((year) => ({
-      date: `${year}`,
-      usage: Math.floor(Math.random() * 12000) + 5000,
-    }));
-  }
-};
-
-const mostUsedCalculators = [
-  { calculator: "BMI", count: 560 },
-  { calculator: "IBW", count: 430 },
-  { calculator: "WHR", count: 320 },
-  { calculator: "BMR", count: 280 },
-  { calculator: "EE", count: 210 },
-];
-
-const generateCalculatorTrends = (period: string) => {
-  let data: {
-    date: string;
-    BMI: number;
-    IBW: number;
-    WHR: number;
-    BMR: number;
-    EE: number;
-  }[] = [];
-
-  if (period === "Daily") {
-    data = Array.from({ length: 8 }, (_, i) => ({
-      date: `July ${15 + i}`,
-      BMI: Math.floor(Math.random() * 100) + 50,
-      IBW: Math.floor(Math.random() * 100) + 30,
-      WHR: Math.floor(Math.random() * 80) + 20,
-      BMR: Math.floor(Math.random() * 70) + 25,
-      EE: Math.floor(Math.random() * 60) + 15,
-    }));
-  } else if (period === "Weekly") {
-    data = Array.from({ length: 6 }, (_, i) => ({
-      date: `Week ${i + 1}`,
-      BMI: Math.floor(Math.random() * 300) + 100,
-      IBW: Math.floor(Math.random() * 300) + 100,
-      WHR: Math.floor(Math.random() * 200) + 80,
-      BMR: Math.floor(Math.random() * 250) + 90,
-      EE: Math.floor(Math.random() * 180) + 70,
-    }));
-  } else if (period === "Monthly") {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-    ];
-    data = months.map((month) => ({
-      date: month,
-      BMI: Math.floor(Math.random() * 500) + 200,
-      IBW: Math.floor(Math.random() * 500) + 200,
-      WHR: Math.floor(Math.random() * 300) + 100,
-      BMR: Math.floor(Math.random() * 400) + 150,
-      EE: Math.floor(Math.random() * 250) + 100,
-    }));
-  } else if (period === "Yearly") {
-    const years = [2021, 2022, 2023, 2024, 2025];
-    data = years.map((year) => ({
-      date: `${year}`,
-      BMI: Math.floor(Math.random() * 1000) + 500,
-      IBW: Math.floor(Math.random() * 1000) + 500,
-      WHR: Math.floor(Math.random() * 800) + 300,
-      BMR: Math.floor(Math.random() * 900) + 350,
-      EE: Math.floor(Math.random() * 700) + 250,
-    }));
-  }
-
-  return data;
-};
-
-const userActivityDistribution = Array.from({ length: 8 }, (_, i) => ({
-  date: `July ${15 + i}`,
-  logins: Math.floor(Math.random() * 200) + 100,
-  calculations: Math.floor(Math.random() * 150) + 80,
-}));
-
-const foodDiaryUsage = dailySignups.map(({ date }) => ({
-  date,
-  logs: Math.floor(Math.random() * 120) + 50,
-  users: Math.floor(Math.random() * 80) + 30,
-}));
-
 export const AnalyticsDashboard = () => {
+  const { analytics, loading, error } = useAnalytics();
   const [period, setPeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
   const [usagePeriod, setUsagePeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
-  const calculatorTrends = generateCalculatorTrends(period);
-  const usageData = generateUsageData(usagePeriod);
+
+  // Transform analytics data for charts
+  const chartData = useMemo(() => {
+    if (!analytics) return null;
+
+    // Food diary usage data (using userCalculations as proxy for foodiPoints)
+    const foodiPointData = analytics.userCalculations
+      .slice(0, 4)
+      .map((user: any) => ({
+        name: user.name,
+        foodiPoints: user.totalCalculations || 0,
+      }));
+
+    // User roles distribution (mock data as this isn't in the API response)
+    const roleData = [
+      { name: "Dietitian", value: Math.floor(analytics.totalUsers * 0.3) },
+      { name: "Lecturer", value: Math.floor(analytics.totalUsers * 0.2) },
+      { name: "Student", value: Math.floor(analytics.totalUsers * 0.4) },
+      { name: "Others", value: Math.floor(analytics.totalUsers * 0.1) },
+    ];
+
+    // Daily signup data
+    const dailySignupData = analytics.dailySignups.map((signup: any) => ({
+      date: signup._id,
+      signups: signup.count,
+    }));
+
+    // Usage data based on selected period
+    const getUsageData = () => {
+      switch (usagePeriod) {
+        case "Daily":
+          return analytics.dailyUsage.map((usage: any) => ({
+            date: usage._id,
+            usage: usage.count,
+          }));
+        case "Weekly":
+          return analytics.weeklyCalculations.map((calc: any) => ({
+            date: calc.week,
+            usage: calc.count,
+          }));
+        case "Monthly":
+          return analytics.monthlyCalculations.map((calc: any) => ({
+            date: calc.month,
+            usage: calc.count,
+          }));
+        case "Yearly":
+          return analytics.yearlyCalculations.map((calc: any) => ({
+            date: calc.year,
+            usage: calc.count,
+          }));
+        default:
+          return analytics.dailyUsage.map((usage: any) => ({
+            date: usage._id,
+            usage: usage.count,
+          }));
+      }
+    };
+
+    // Most used calculators
+    const calculatorData = analytics.mostUsedCalculators.map((calc: any) => ({
+      calculator: calc.name,
+      count: calc.count,
+    }));
+
+    // Calculator trends over time
+    const getCalculatorTrends = () => {
+      const baseData = (() => {
+        switch (period) {
+          case "Daily":
+            return analytics.dailyCalculations.map((calc: any) => ({
+              date: calc._id,
+              total: calc.count,
+            }));
+          case "Weekly":
+            return analytics.weeklyCalculations.map((calc: any) => ({
+              date: calc.week,
+              total: calc.count,
+            }));
+          case "Monthly":
+            return analytics.monthlyCalculations.map((calc: any) => ({
+              date: calc.month,
+              total: calc.count,
+            }));
+          case "Yearly":
+            return analytics.yearlyCalculations.map((calc: any) => ({
+              date: calc.year,
+              total: calc.count,
+            }));
+          default:
+            return analytics.dailyCalculations.map((calc: any) => ({
+              date: calc._id,
+              total: calc.count,
+            }));
+        }
+      })();
+
+      // Distribute total calculations among different calculator types
+      // This is an approximation since individual calculator data over time isn't available
+      return baseData.map((item: any) => ({
+        date: item.date,
+        BMI: Math.floor(item.total * 0.35), // Assuming BMI is 35% of total
+        IBW: Math.floor(item.total * 0.25), // IBW is 25% of total
+        WHR: Math.floor(item.total * 0.2), // WHR is 20% of total
+        BMR: Math.floor(item.total * 0.15), // BMR is 15% of total
+        EE: Math.floor(item.total * 0.05), // EE is 5% of total
+      }));
+    };
+
+    // User activity distribution
+    const userActivityData = analytics.dailyUsage
+      .slice(0, 8)
+      .map((usage: any, index: number) => {
+        const calculation = analytics.dailyCalculations[index];
+        return {
+          date: usage._id,
+          logins: usage.count,
+          calculations: calculation ? calculation.count : 0,
+        };
+      });
+
+    // Food diary usage (using user calculations as proxy)
+    const foodDiaryData = analytics.userCalculations
+      .slice(0, 8)
+      .map((user: any) => ({
+        date: user.name.substring(0, 6), // Truncate name for date-like display
+        logs: user.totalCalculations,
+        users: Math.floor(user.totalCalculations / 3), // Approximate users from logs
+      }));
+
+    return {
+      foodiPointData,
+      roleData,
+      dailySignupData,
+      usageData: getUsageData(),
+      calculatorData,
+      calculatorTrends: getCalculatorTrends(),
+      userActivityData,
+      foodDiaryData,
+    };
+  }, [analytics, period, usagePeriod]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+        {[...Array(8)].map((_, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-lg p-4 shadow animate-pulse"
+          >
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+        <div className="col-span-2 bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+          <p className="text-red-600">Error loading analytics: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!analytics || !chartData) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+        <div className="col-span-2 bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+          <p className="text-gray-600">No analytics data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
       {/* Foodipoint Usage */}
       <div className="bg-white rounded-lg p-4 shadow">
-        <h2 className="text-lg font-semibold mb-4">Foodipoint Usage</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          Top Users by Calculations
+        </h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
-            data={data}
+            data={chartData.foodiPointData}
             margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
@@ -191,7 +236,7 @@ export const AnalyticsDashboard = () => {
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
-              data={roleData}
+              data={chartData.roleData}
               cx="50%"
               cy="50%"
               outerRadius={80}
@@ -199,7 +244,7 @@ export const AnalyticsDashboard = () => {
               dataKey="value"
               label
             >
-              {roleData.map((_entry, index) => (
+              {chartData.roleData.map((_entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
@@ -216,7 +261,7 @@ export const AnalyticsDashboard = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">Daily Signup Rate</h2>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={dailySignups}>
+          <LineChart data={chartData.dailySignupData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -231,7 +276,7 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Daily Usage */}
+      {/* Usage Chart */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">{usagePeriod} Usage</h2>
@@ -247,7 +292,7 @@ export const AnalyticsDashboard = () => {
           </select>
         </div>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={usageData}>
+          <BarChart data={chartData.usageData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -261,7 +306,7 @@ export const AnalyticsDashboard = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">Most Used Calculators</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart layout="vertical" data={mostUsedCalculators}>
+          <BarChart layout="vertical" data={chartData.calculatorData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" />
             <YAxis dataKey="calculator" type="category" />
@@ -287,7 +332,7 @@ export const AnalyticsDashboard = () => {
           </select>
         </div>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={calculatorTrends}>
+          <AreaChart data={chartData.calculatorTrends}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -338,7 +383,7 @@ export const AnalyticsDashboard = () => {
           User Activity Distribution
         </h2>
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={userActivityDistribution}>
+          <ComposedChart data={chartData.userActivityData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -362,21 +407,26 @@ export const AnalyticsDashboard = () => {
 
       {/* Food Diary Usage */}
       <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-lg font-semibold mb-2">Food Diary Usage</h2>
+        <h2 className="text-lg font-semibold mb-2">Top Calculator Users</h2>
         <ResponsiveContainer width="100%" height={250}>
-          <ComposedChart data={foodDiaryUsage}>
+          <ComposedChart data={chartData.foodDiaryData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="logs" barSize={20} fill="#f97316" name="Logs" />
+            <Bar
+              dataKey="logs"
+              barSize={20}
+              fill="#f97316"
+              name="Calculations"
+            />
             <Line
               type="monotone"
               dataKey="users"
               stroke="#3b82f6"
               strokeWidth={2}
-              name="Users"
+              name="Avg per User"
             />
           </ComposedChart>
         </ResponsiveContainer>

@@ -1,17 +1,81 @@
-const users = [
-  { rank: 1, user: "folake sowonoye", usage: 51, lastActive: "18/07/2025" },
-  { rank: 2, user: "Funmi Oluwadairo", usage: 30, lastActive: "17/06/2025" },
-  { rank: 3, user: "Ayomide Ademola", usage: 23, lastActive: "14/07/2025" },
-  { rank: 4, user: "Yussuf Isiaq", usage: 22, lastActive: "05/07/2025" },
-  { rank: 5, user: "Barakat Olaniyi", usage: 11, lastActive: "19/06/2025" },
-  { rank: 6, user: "Temitope Ayokunle", usage: 10, lastActive: "25/06/2025" },
-  { rank: 7, user: "Seyi Oladipo", usage: 10, lastActive: "07/05/2025" },
-  { rank: 8, user: "oluwole boluwatife", usage: 9, lastActive: "15/07/2025" },
-  { rank: 9, user: "Labbie Isiaq", usage: 9, lastActive: "30/06/2025" },
-  { rank: 10, user: "Olusola Ibiyemi", usage: 8, lastActive: "16/06/2025" },
-];
+import { useAnalytics } from "../../Hooks/useAnalytics";
 
 const TopUsersTable = () => {
+  const { analytics, loading, error } = useAnalytics();
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse border border-gray-200 animate-pulse">
+            <thead className="bg-gray-100">
+              <tr>
+                {[...Array(4)].map((_, index) => (
+                  <th
+                    key={index}
+                    className="border border-gray-200 p-3 text-left text-sm font-medium"
+                  >
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(10)].map((_, rowIndex) => (
+                <tr key={rowIndex} className="even:bg-gray-50">
+                  {[...Array(4)].map((_, colIndex) => (
+                    <td
+                      key={colIndex}
+                      className="border border-gray-200 p-3 text-sm"
+                    >
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+          <p className="text-red-600">Error: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fixed: Added optional chaining and better null checking
+  if (!analytics || !analytics.topUsers || analytics.topUsers.length === 0) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
+        <p className="text-gray-500">No data available</p>
+      </div>
+    );
+  }
+
+  // Fixed: Better date formatting with error handling
+  const topUsers = analytics.topUsers.map((user: any, index: number) => ({
+    rank: index + 1,
+    name: user.name || "Unknown User",
+    usage: user.usageCount || 0,
+    lastActive: user.lastUsed
+      ? new Date(user.lastUsed).toLocaleDateString("en-GB", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "Never",
+  }));
+
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
@@ -34,20 +98,34 @@ const TopUsersTable = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map(({ rank, user, usage, lastActive }) => (
-              <tr key={rank} className="even:bg-gray-50">
-                <td className="border border-gray-200 p-3 text-sm">{rank}</td>
-                <td className="border border-gray-200 p-3 text-sm capitalize">
-                  {user}
+            {topUsers.map(({ rank, name, usage, lastActive }) => (
+              <tr
+                key={rank}
+                className="even:bg-gray-50 hover:bg-blue-50 transition-colors"
+              >
+                <td className="border border-gray-200 p-3 text-sm font-medium">
+                  #{rank}
                 </td>
-                <td className="border border-gray-200 p-3 text-sm">{usage}</td>
+                <td className="border border-gray-200 p-3 text-sm capitalize font-medium">
+                  {name}
+                </td>
                 <td className="border border-gray-200 p-3 text-sm">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {usage.toLocaleString()}
+                  </span>
+                </td>
+                <td className="border border-gray-200 p-3 text-sm text-gray-600">
                   {lastActive}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Added: Show total count */}
+      <div className="mt-4 text-sm text-gray-600">
+        Showing top {topUsers.length} users by engagement
       </div>
     </div>
   );

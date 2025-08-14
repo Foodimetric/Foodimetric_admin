@@ -31,7 +31,7 @@ export const AIChatDashboard = () => {
       }));
       setUsers(mappedUsers);
       setLoading(false);
-    }, 1000); 
+    }, 1000);
   }, []);
 
   const filteredUsers = users.filter((user) =>
@@ -46,9 +46,21 @@ export const AIChatDashboard = () => {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const exportMessages = () => {
+    alert("Message export feature triggered!");
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">AI Chats</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold mb-4">AI Chats</h2>
+        <button
+          onClick={exportMessages}
+          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm"
+        >
+          Export Messages
+        </button>
+      </div>
 
       <div className="flex justify-between items-center mb-4">
         <input

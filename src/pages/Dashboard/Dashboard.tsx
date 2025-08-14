@@ -1,21 +1,21 @@
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 import TopAnthropometricUsers from "./components/TopAnthropometricUsers";
 import TopUsersTable from "./components/TopUsersTable";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { OverviewCards } from "./components/OverviewCards";
-import { SkeletonBox } from "../../components/SkeletonBox";
+// import { SkeletonBox } from "../../components/SkeletonBox";
 
 export const Dashboard = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timeout);
-  }, []);
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => setIsLoading(false), 2000);
+  //   return () => clearTimeout(timeout);
+  // }, []);
 
   return (
     <div>
-      {isLoading ? (
+      {/* {isLoading ? (
         <div className="space-y-6">
           <SkeletonBox height="h-24" />
           <SkeletonBox height="h-80" />
@@ -24,7 +24,7 @@ export const Dashboard = () => {
             <SkeletonBox height="h-64" />
           </div>
         </div>
-      ) : (
+      ) : ( */}
         <>
           <OverviewCards />
           <AnalyticsDashboard />
@@ -33,7 +33,7 @@ export const Dashboard = () => {
             <TopAnthropometricUsers />
           </div>
         </>
-      )}
+      {/* )} */}
     </div>
   );
 };

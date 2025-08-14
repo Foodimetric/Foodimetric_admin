@@ -10,7 +10,7 @@ export const useUserData = () => {
     setTimeout(() => {
       setUsers([
         {
-          id: 1,
+          id: "1",
           firstName: "User",
           lastName: "One",
           email: "user1@example.com",

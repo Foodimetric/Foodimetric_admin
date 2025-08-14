@@ -13,45 +13,78 @@ import { NotificationPage } from "./pages/Notification/NotificationPage";
 import Login from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { AdminSettings } from "./pages/Settings/AdminSettings";
-import { AIChatDashboard } from "./pages/AI-chats/aiChats";
-import { CustomPrompts } from "./pages/AI-chats/customPrompt";
+import { AIChatDashboard } from "./pages/AI-chats/AIChats";
+import { CustomPrompts } from "./pages/AI-chats/CustomPrompt";
+import VerifyEmail from "./pages/VerifyEmail";
+import { AuthProvider } from "./components/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
-        <Route
-          path="/*"
-          element={
-            <AdminLayout>
-              <ActivityLogProvider>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/users" element={<UserManagementPage />} />
-                  <Route path="/ai-chats" element={<AIChatDashboard />} />
-                  <Route
-                    path="/ai-chats/custom-prompt"
-                    element={<CustomPrompts />}
-                  />
-                  <Route path="/promo-codes" element={<PromoCodePage />} />
-                  <Route path="/activity-logs" element={<ActivityLogPage />} />
-                  <Route path="/notification" element={<NotificationPage />} />
-                  <Route path="/settings" element={<AdminSettings />} />
-                  <Route path="/test" element={<Dashboard />} />
-                  <Route
-                    path="*"
-                    element={<Navigate to="/dashboard" replace />}
-                  />
-                </Routes>
-              </ActivityLogProvider>
-            </AdminLayout>
-          }
-        />
-      </Routes>
-    </Router>
+          {/* Protected routes */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <ActivityLogProvider>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/users" element={<UserManagementPage />} />
+                      <Route path="/ai-chats" element={<AIChatDashboard />} />
+                      <Route
+                        path="/ai-chats/custom-prompt"
+                        element={<CustomPrompts />}
+                      />
+                      <Route path="/promo-codes" element={<PromoCodePage />} />
+                      <Route
+                        path="/activity-logs"
+                        element={<ActivityLogPage />}
+                      />
+                      <Route
+                        path="/notification"
+                        element={<NotificationPage />}
+                      />
+                      <Route path="/settings" element={<AdminSettings />} />
+                      <Route path="/test" element={<Dashboard />} />
+                      <Route
+                        path="*"
+                        element={<Navigate to="/dashboard" replace />}
+                      />
+                    </Routes>
+                  </ActivityLogProvider>
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem("authToken");
+
+  if (token) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 export default App;

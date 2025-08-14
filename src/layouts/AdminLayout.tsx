@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { NotificationBell } from "../components/NotificationBell";
+import { useAuth } from "../components/AuthContext";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -34,11 +35,13 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
-  };
+ const handleLogout = () => {
+   if (window.confirm("Are you sure you want to logout?")) {
+     logout();
+   }
+ };
 
   const closeSidebar = () => setMobileOpen(false);
 
