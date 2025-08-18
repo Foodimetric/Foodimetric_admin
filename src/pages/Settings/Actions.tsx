@@ -1,4 +1,4 @@
-import { RefreshCcw, ShieldAlert, Trash2 } from "lucide-react";
+import { ShieldAlert, Trash2 } from "lucide-react";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
 
 export const Actions = () => {
