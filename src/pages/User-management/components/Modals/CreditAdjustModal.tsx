@@ -46,6 +46,7 @@ export const CreditAdjustModal = ({ user, onClose }: Props) => {
       );
 
       if (!response.ok) {
+        
         const errorData = await response.json();
         throw new Error(
           errorData?.error || `HTTP error! status: ${response.status}`
