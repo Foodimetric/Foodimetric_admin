@@ -18,61 +18,65 @@ import { CustomPrompts } from "./pages/AI-chats/CustomPrompt";
 import VerifyEmail from "./pages/VerifyEmail";
 import { AuthProvider } from "./components/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AnalyticsProvider } from "./contexts/AnalyticsContext";
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+      <AnalyticsProvider>
+        <Router>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <ActivityLogProvider>
-                    <Routes>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/users" element={<UserManagementPage />} />
-                      <Route path="/ai-chats" element={<AIChatDashboard />} />
-                      <Route
-                        path="/ai-chats/custom-prompt"
-                        element={<CustomPrompts />}
-                      />
-                      <Route path="/promo-codes" element={<PromoCodePage />} />
-                      <Route
-                        path="/activity-logs"
-                        element={<ActivityLogPage />}
-                      />
-                      <Route
-                        path="/notification"
-                        element={<NotificationPage />}
-                      />
-                      <Route path="/settings" element={<AdminSettings />} />
-                      <Route path="/test" element={<Dashboard />} />
-                      <Route
-                        path="*"
-                        element={<Navigate to="/dashboard" replace />}
-                      />
-                    </Routes>
-                  </ActivityLogProvider>
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <ActivityLogProvider>
+                      <Routes>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/users" element={<UserManagementPage />} />
+                        <Route path="/ai-chats" element={<AIChatDashboard />} />
+                        <Route
+                          path="/ai-chats/custom-prompt"
+                          element={<CustomPrompts />}
+                        />
+                        <Route
+                          path="/promo-codes"
+                          element={<PromoCodePage />}
+                        />
+                        <Route
+                          path="/activity-logs"
+                          element={<ActivityLogPage />}
+                        />
+                        <Route
+                          path="/notification"
+                          element={<NotificationPage />}
+                        />
+                        <Route path="/settings" element={<AdminSettings />} />
+                        <Route path="/test" element={<Dashboard />} />
+                        <Route
+                          path="*"
+                          element={<Navigate to="/dashboard" replace />}
+                        />
+                      </Routes>
+                    </ActivityLogProvider>
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
+      </AnalyticsProvider>
     </AuthProvider>
   );
 }

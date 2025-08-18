@@ -1,8 +1,12 @@
 import { Users, NotebookText, Ruler, LineChart } from "lucide-react";
-import { useAnalytics } from "../../Hooks/useAnalytics";
+import { useAnalytics } from "../../../contexts/AnalyticsContext";
 
 export const OverviewCards = () => {
-  const { analytics, loading, error } = useAnalytics();
+  const { analytics, loading, error, refetch } = useAnalytics();
+
+   const handleRefresh = async () => {
+     await refetch();
+   };
 
   if (loading) {
     return (
@@ -26,6 +30,12 @@ export const OverviewCards = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         <div className="col-span-full bg-red-50 border border-red-200 rounded-xl p-4 text-center">
           <p className="text-red-600">Error loading analytics: {error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -36,6 +46,7 @@ export const OverviewCards = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         <div className="col-span-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
           <p className="text-gray-600">No analytics data available</p>
+          <button onClick={handleRefresh}>Load Analytics</button>
         </div>
       </div>
     );

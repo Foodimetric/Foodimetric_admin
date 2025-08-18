@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import foodimetricLogo from "/img/logo.png";
 import { FOODIMETRIC_HOST_URL } from "../utils";
 import { toast, ToastContainer } from "react-toastify";
+import { useAnalytics } from "../contexts/AnalyticsContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { clearData } = useAnalytics();
   const [role, setRole] = useState("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +18,8 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    clearData();
 
     try {
       const response = await fetch(`${FOODIMETRIC_HOST_URL}/admin/login`, {
@@ -34,8 +38,8 @@ const Login = () => {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userRole", data.role);
 
-      // Navigate to VerifyEmail and pass email
       toast.success("Verification code sent to your email.");
+
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
       }, 1500);

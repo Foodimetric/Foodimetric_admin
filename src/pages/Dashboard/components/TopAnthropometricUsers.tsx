@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { useAnalytics } from "../../Hooks/useAnalytics";
+import { useAnalytics } from "../../../contexts/AnalyticsContext";
 
 const USERS_PER_PAGE = 10;
 
 const TopAnthropometricUsers = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const { analytics, loading, error } = useAnalytics();
+  const { analytics, loading, error, refetch } = useAnalytics();
+
+   const handleRefresh = async () => {
+     await refetch();
+   };
 
   if (loading) {
     return (
@@ -56,6 +60,12 @@ const TopAnthropometricUsers = () => {
         <h2 className="text-lg font-semibold mb-4">Top Anthropometric Users</h2>
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
           <p className="text-red-600">Error: {error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -66,6 +76,7 @@ const TopAnthropometricUsers = () => {
       <div className="p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-4">Top Anthropometric Users</h2>
         <p className="text-gray-500">No data available</p>
+        <button onClick={handleRefresh}>Load Analytics</button>
       </div>
     );
   }

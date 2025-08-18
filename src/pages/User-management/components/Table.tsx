@@ -3,7 +3,7 @@ import { CreditAdjustModal } from "./Modals/CreditAdjustModal";
 import { User } from "../types/user";
 import { UserDetailModal } from "./Modals/UserDetailModal";
 import { UserOptionsMenu } from "./UserOptionsMenu";
-import { useAnalytics } from "../../Hooks/useAnalytics";
+import { useAnalytics } from "../../../contexts/AnalyticsContext";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -36,7 +36,7 @@ export const Table = ({
   const data: User[] =
     propData ||
     analytics?.allUsers?.map((user: any) => ({
-      id: String(user._id), // Ensure ID is a string
+      id: String(user._id),
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -50,7 +50,7 @@ export const Table = ({
             month: "short",
             day: "numeric",
           })
-        : "Never",
+        : "Unknown",
       verified: user.isVerified,
     })) ||
     [];
@@ -256,7 +256,7 @@ export const Table = ({
                     {user.verified ? "Verified" : "Unverified"}
                   </span>
                 </td>
-                <td className="p-3">
+                <td className="p-3 z-10">
                   <UserOptionsMenu
                     user={user}
                     isOpen={openMenuId === user.id}
@@ -273,19 +273,19 @@ export const Table = ({
 
       {/* Enhanced Pagination */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-2 sm:gap-4">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => goToPage(1)}
               disabled={currentPage === 1}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               First
             </button>
             <button
               onClick={() => goToPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -299,7 +299,7 @@ export const Table = ({
                     typeof pageNum === "number" && goToPage(pageNum)
                   }
                   disabled={pageNum === "..."}
-                  className={`px-3 py-2 text-sm font-medium border-t border-b border-r border-gray-300 ${
+                  className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium border-t border-b border-r border-gray-300 ${
                     pageNum === currentPage
                       ? "bg-blue-50 text-blue-600 border-blue-500"
                       : pageNum === "..."
@@ -315,14 +315,14 @@ export const Table = ({
             <button
               onClick={() => goToPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
             <button
               onClick={() => goToPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Last
             </button>

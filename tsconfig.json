@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

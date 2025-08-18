@@ -6,7 +6,7 @@ import { UserManagement } from "./UserManagement";
 import { CreateUserModal } from "./CreateUserModal";
 import { Actions } from "./Actions";
 
-export const AdminSettings = ({ isSuperAdmin = true }) => {
+export const AdminSettings = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [userRegistration, setUserRegistration] = useState(true);
   const [newEmail, setNewEmail] = useState("");
@@ -23,6 +23,48 @@ export const AdminSettings = ({ isSuperAdmin = true }) => {
     setNewRole("admin");
   };
 
+  const currentUserRole = localStorage.getItem("userRole");
+  const isSuperAdmin = currentUserRole === "super_admin";
+  const isAdmin = currentUserRole === "admin";
+  const isMarketing = currentUserRole === "marketing";
+  const isDeveloper = currentUserRole === "developer";
+
+  // Helper function to get role display name and styling
+  const getRoleDisplay = () => {
+    if (isSuperAdmin) {
+      return {
+        name: "Super Admin",
+        className: "bg-purple-100 text-purple-700",
+      };
+    } else if (isAdmin) {
+      return {
+        name: "Admin",
+        className: "bg-blue-100 text-blue-700",
+      };
+    } else if (isMarketing) {
+      return {
+        name: "Marketing",
+        className: "bg-green-100 text-green-700",
+      };
+    } else if (isDeveloper) {
+      return {
+        name: "Developer",
+        className: "bg-orange-100 text-orange-700",
+      };
+    } else {
+      return {
+        name: "Unknown Role",
+        className: "bg-gray-100 text-gray-700",
+      };
+    }
+  };
+
+  const roleDisplay = getRoleDisplay();
+
+  const canManageSettings = isSuperAdmin || isAdmin;
+  const canManageUsers = isSuperAdmin || isAdmin;
+  const canAccessActions = isSuperAdmin || isAdmin || isDeveloper;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -30,27 +72,49 @@ export const AdminSettings = ({ isSuperAdmin = true }) => {
           <Settings className="text-blue-600" /> Admin Settings
         </h1>
         <div
-          className={`px-3 py-1 rounded-full text-sm font-semibold ${
-            isSuperAdmin
-              ? "bg-purple-100 text-purple-700"
-              : "bg-blue-100 text-blue-700"
-          }`}
+          className={`px-3 py-1 rounded-full text-sm font-semibold ${roleDisplay.className}`}
         >
-          Logged in as {isSuperAdmin ? "Super Admin" : "Admin"}
+          Logged in as {roleDisplay.name}
         </div>
       </div>
 
-      <GeneralSettings
-        maintenanceMode={maintenanceMode}
-        userRegistration={userRegistration}
-        setMaintenanceMode={setMaintenanceMode}
-        setUserRegistration={setUserRegistration}
-      />
+      {canManageSettings && (
+        <GeneralSettings
+          maintenanceMode={maintenanceMode}
+          userRegistration={userRegistration}
+          setMaintenanceMode={setMaintenanceMode}
+          setUserRegistration={setUserRegistration}
+        />
+      )}
 
-      {isSuperAdmin && <UserManagement onAdd={() => setShowModal(true)} />}
-      <Actions />
+      {canManageUsers && <UserManagement onAdd={() => setShowModal(true)} />}
 
-      {showModal && (
+      {canAccessActions && <Actions />}
+
+      {isMarketing && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-yellow-800 mb-2">
+            Limited Access
+          </h2>
+          <p className="text-yellow-700">
+            Your marketing role has limited access to admin settings. Contact a
+            Super Admin for additional permissions.
+          </p>
+        </div>
+      )}
+
+      {!isSuperAdmin && !isAdmin && !isMarketing && !isDeveloper && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">
+            Access Denied
+          </h2>
+          <p className="text-red-700">
+            Your current role does not have permission to access admin settings.
+          </p>
+        </div>
+      )}
+
+      {showModal && canManageUsers && (
         <CreateUserModal
           email={newEmail}
           password={newPassword}

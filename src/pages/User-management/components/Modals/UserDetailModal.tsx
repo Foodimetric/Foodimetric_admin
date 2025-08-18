@@ -1,10 +1,25 @@
 import { User } from "../../types/user";
 import { X } from "lucide-react";
+import { useState } from "react";
+import { useAnalytics } from "../../../../contexts/AnalyticsContext";
 
 interface Props {
   user: User;
   onClose: () => void;
 }
+
+// interface UserFromAnalytics {
+//   _id: string;
+//   firstName: string;
+//   lastName: string;
+//   email: string;
+//   isVerified: boolean;
+//   category: number;
+//   googleId?: string;
+//   credits: number;
+//   lastUsageDate?: string;
+//   suspended?: boolean;
+// }
 
 const getRoleName = (category: number) => {
   switch (category) {
@@ -19,7 +34,168 @@ const getRoleName = (category: number) => {
   }
 };
 
-export const UserDetailModal = ({ user, onClose }: Props) => {
+export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const { analytics } = useAnalytics();
+
+  // Get updated user data from analytics context or use initial user
+  const analyticsUser = analytics?.allUsers.find(
+    (u: any) => u._id === initialUser.id
+  );
+
+  // Create a unified user object with consistent property names
+  const user = analyticsUser
+    ? {
+        id: analyticsUser._id,
+        firstName: analyticsUser.firstName,
+        lastName: analyticsUser.lastName,
+        email: analyticsUser.email,
+        verified: analyticsUser.isVerified,
+        category: analyticsUser.category,
+        googleId: analyticsUser.googleId,
+        credits: analyticsUser.credits,
+        lastUsageDate: analyticsUser.lastUsageDate,
+        suspended: analyticsUser.suspended || false,
+      }
+    : initialUser;
+
+  // Get current user role from localStorage
+  const currentUserRole = localStorage.getItem("userRole");
+  const isSuperAdmin = currentUserRole === "super_admin";
+  const isAdmin = currentUserRole === "admin";
+  const canAccessDangerZone = isSuperAdmin || isAdmin;
+
+  const showMessage = (
+    msg: string,
+    _type: "success" | "error" | "warning" = "success"
+  ) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), 3000);
+  };
+
+  const handleSuspendUser = async () => {
+    if (!canAccessDangerZone) {
+      showMessage("Only admins and super admins can suspend users", "warning");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to suspend ${user.firstName} ${user.lastName}?`
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(`/api/users/${user.id}/suspend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        showMessage("User suspended successfully", "success");
+        // You might want to refresh the user data here
+      } else {
+        throw new Error("Failed to suspend user");
+      }
+    } catch (error) {
+      showMessage("Failed to suspend user", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivateUser = async () => {
+    if (!canAccessDangerZone) {
+      showMessage("Only admins and super admins can activate users", "warning");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to activate ${user.firstName} ${user.lastName}?`
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(`/api/users/${user.id}/activate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        showMessage("User activated successfully", "success");
+      } else {
+        throw new Error("Failed to activate user");
+      }
+    } catch (error) {
+      showMessage("Failed to activate user", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!isSuperAdmin) {
+      showMessage("Only super admins can delete users", "warning");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `⚠️ DANGER: Are you sure you want to permanently DELETE ${user.firstName} ${user.lastName}?\n\nThis action cannot be undone and will remove all user data including:\n- Profile information\n- Calculation history\n- Food diary entries\n\nType "DELETE" to confirm this action.`
+      )
+    ) {
+      return;
+    }
+
+    // Double confirmation for delete
+    const confirmation = window.prompt(
+      'Type "DELETE" to confirm user deletion:'
+    );
+    if (confirmation !== "DELETE") {
+      showMessage("User deletion cancelled", "warning");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        showMessage("User deleted successfully", "success");
+        setTimeout(() => onClose(), 1500); // Close modal after success
+      } else {
+        throw new Error("Failed to delete user");
+      }
+    } catch (error) {
+      showMessage("Failed to delete user", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const bmiData = {
     date: "June 7, 2025 03:01:16 PM",
     result: "24.22 kg/m²",
@@ -66,6 +242,23 @@ export const UserDetailModal = ({ user, onClose }: Props) => {
           </button>
         </div>
 
+        {/* Message Display */}
+        {message && (
+          <div
+            className={`mx-6 mt-4 p-3 rounded-lg text-sm ${
+              message.includes("success") ||
+              message.includes("activated") ||
+              message.includes("suspended")
+                ? "bg-green-100 text-green-700 border border-green-200"
+                : message.includes("warning") || message.includes("cancelled")
+                ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                : "bg-red-100 text-red-700 border border-red-200"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
         {/* Scrollable Content */}
         <div className="overflow-y-auto p-6 space-y-6">
           {/* Personal Info */}
@@ -93,8 +286,16 @@ export const UserDetailModal = ({ user, onClose }: Props) => {
                   <strong>Credits:</strong> {user.credits} points
                 </p>
                 <p>
-                  <strong>Verified:</strong>{" "}
-                  {user.verified ? `✅ Yes` : "❌ No"}
+                  <strong>Status:</strong>{" "}
+                  {user.verified ? (
+                    <span className="text-green-600 font-medium">
+                      ✅ Active
+                    </span>
+                  ) : (
+                    <span className="text-red-600 font-medium">
+                      ❌ Suspended
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -156,23 +357,62 @@ export const UserDetailModal = ({ user, onClose }: Props) => {
             </div>
           </div>
 
-          {/* Danger Zone */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-red-700 border-b pb-2">
-              Danger Zone
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <button className="bg-red-600 text-white py-2 rounded hover:bg-red-700 text-sm">
-                Suspend User
-              </button>
-              <button className="bg-green-600 text-white py-2 rounded hover:bg-green-700 text-sm">
-                Activate User
-              </button>
-              <button className="border border-red-600 text-red-600 py-2 rounded hover:bg-red-100 text-sm">
-                Delete User
-              </button>
+          {/* Danger Zone - Only show if user has access */}
+          {canAccessDangerZone && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-red-700 border-b pb-2">
+                  User Management
+                </h3>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  {isSuperAdmin ? "Super Admin" : "Admin"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <button
+                  onClick={handleSuspendUser}
+                  disabled={loading || !user.verified}
+                  className={`py-2 rounded text-sm font-medium transition-colors ${
+                    !user.verified
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }`}
+                >
+                  {loading ? "Processing..." : "Suspend User"}
+                </button>
+                <button
+                  onClick={handleActivateUser}
+                  disabled={loading || user.verified}
+                  className={`py-2 rounded text-sm font-medium transition-colors ${
+                    user.verified
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  }`}
+                >
+                  {loading ? "Processing..." : "Activate User"}
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={loading || !isSuperAdmin}
+                  className={`py-2 rounded text-sm font-medium transition-colors ${
+                    !isSuperAdmin
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-400"
+                      : "border border-red-600 text-red-600 hover:bg-red-100"
+                  }`}
+                  title={
+                    !isSuperAdmin ? "Only Super Admins can delete users" : ""
+                  }
+                >
+                  {loading ? "Processing..." : "Delete User"}
+                </button>
+              </div>
+              {!isSuperAdmin && (
+                <p className="text-xs text-gray-600 text-center mt-2">
+                  * User deletion requires Super Admin privileges
+                </p>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

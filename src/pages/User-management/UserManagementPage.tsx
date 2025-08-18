@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { Table } from "./components/Table";
-import { useAnalytics } from "../Hooks/useAnalytics";
+import { useAnalytics } from "../../contexts/AnalyticsContext";
+import { FileDown, UserRoundX } from "lucide-react";
 
 export const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,7 +31,7 @@ export const UserManagementPage = () => {
             month: "short",
             day: "numeric",
           })
-        : "Never",
+        : "Unknown",
       verified: user.isVerified,
     }));
   }, [analytics]);
@@ -68,7 +69,6 @@ export const UserManagementPage = () => {
     ];
 
     const rows = users.map((user) => {
-      // Escape any commas in the data by wrapping in quotes
       const escapeCSV = (value: string | number | null | undefined) => {
         const str = String(value || "");
         return str.includes(",") || str.includes('"') || str.includes("\n")
@@ -104,7 +104,7 @@ export const UserManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -119,25 +119,13 @@ export const UserManagementPage = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => exportCSV(filteredUsers)}
-                disabled={filteredUsers.length === 0 || loading}
+                disabled={filteredUsers.length === 0 || filteredUsers.length !== userData.length || loading}
                 className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200 flex items-center gap-2"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+                <FileDown className="-4 h-4"/>
                 Export CSV
               </button>
-              <div className="text-sm text-gray-500 px-3 py-2 bg-gray-100 rounded-md">
+              <div className="text-lg font-bold px-3 py-2 bg-gray-100 rounded-md">
                 {loading ? "Loading..." : `${filteredUsers.length} users`}
               </div>
             </div>
@@ -183,19 +171,7 @@ export const UserManagementPage = () => {
           ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center">
               <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-6 h-6 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                  />
-                </svg>
+                <UserRoundX className="w-6 h-6 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 No users found

@@ -1,7 +1,12 @@
-import { useAnalytics } from "../../Hooks/useAnalytics";
+import { useAnalytics } from "../../../contexts/AnalyticsContext";
+
 
 const TopUsersTable = () => {
-  const { analytics, loading, error } = useAnalytics();
+  const { analytics, loading, error, refetch } = useAnalytics();
+
+   const handleRefresh = async () => {
+     await refetch();
+   };
 
   if (loading) {
     return (
@@ -47,22 +52,27 @@ const TopUsersTable = () => {
         <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
           <p className="text-red-600">Error: {error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  // Fixed: Added optional chaining and better null checking
   if (!analytics || !analytics.topUsers || analytics.topUsers.length === 0) {
     return (
       <div className="p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-4">Top Users by Engagement</h2>
         <p className="text-gray-500">No data available</p>
+        <button onClick={handleRefresh}>Load Analytics</button>
       </div>
     );
   }
 
-  // Fixed: Better date formatting with error handling
   const topUsers = analytics.topUsers.map((user: any, index: number) => ({
     rank: index + 1,
     name: user.name || "Unknown User",
@@ -123,7 +133,6 @@ const TopUsersTable = () => {
         </table>
       </div>
 
-      {/* Added: Show total count */}
       <div className="mt-4 text-sm text-gray-600">
         Showing top {topUsers.length} users by engagement
       </div>

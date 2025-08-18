@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -33,7 +33,7 @@ const navItems = [
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
 

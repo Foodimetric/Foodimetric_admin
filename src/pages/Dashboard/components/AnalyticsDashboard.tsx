@@ -17,12 +17,12 @@ import {
   Legend,
   ComposedChart,
 } from "recharts";
-import { useAnalytics } from "../../Hooks/useAnalytics";
+import { useAnalytics } from "../../../contexts/AnalyticsContext";
 
 const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"];
 
 export const AnalyticsDashboard = () => {
-  const { analytics, loading, error } = useAnalytics();
+  const { analytics, loading, error, refetch } = useAnalytics();
   const [period, setPeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
@@ -30,33 +30,54 @@ export const AnalyticsDashboard = () => {
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
 
-  // Transform analytics data for charts
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   const chartData = useMemo(() => {
     if (!analytics) return null;
 
-    // Food diary usage data (using userCalculations as proxy for foodiPoints)
-    const foodiPointData = analytics.userCalculations
+    const topUsersData = analytics.userCalculations
       .slice(0, 4)
       .map((user: any) => ({
         name: user.name,
-        foodiPoints: user.totalCalculations || 0,
+        calculations: user.totalCalculations || 0,
       }));
 
-    // User roles distribution (mock data as this isn't in the API response)
-    const roleData = [
-      { name: "Dietitian", value: Math.floor(analytics.totalUsers * 0.3) },
-      { name: "Lecturer", value: Math.floor(analytics.totalUsers * 0.2) },
-      { name: "Student", value: Math.floor(analytics.totalUsers * 0.4) },
-      { name: "Others", value: Math.floor(analytics.totalUsers * 0.1) },
-    ];
+    const roleData = analytics.roleDistribution
+      ? Object.entries(analytics.roleDistribution).map(([key, value]) => {
+          let roleName;
+          switch (key) {
+            case "0":
+              roleName = "Others";
+              break;
+            case "1":
+              roleName = "Lecturer/Researcher";
+              break;
+            case "2":
+              roleName = "Registered Dietitian/Clinical Nutritionist";
+              break;
+            case "3":
+              roleName = "Nutrition Student";
+              break;
+            case "null":
+              roleName = "Unspecified";
+              break;
+            default:
+              roleName = `Role ${key}`;
+          }
+          return {
+            name: roleName,
+            value: value as unknown as number,
+          };
+        })
+      : [];
 
-    // Daily signup data
-    const dailySignupData = analytics.dailySignups.map((signup: any) => ({
+    const dailySignupData = analytics.dailySignups.slice(0, 30).map((signup: any) => ({
       date: signup._id,
       signups: signup.count,
     }));
 
-    // Usage data based on selected period
     const getUsageData = () => {
       switch (usagePeriod) {
         case "Daily":
@@ -87,18 +108,16 @@ export const AnalyticsDashboard = () => {
       }
     };
 
-    // Most used calculators
     const calculatorData = analytics.mostUsedCalculators.map((calc: any) => ({
       calculator: calc.name,
       count: calc.count,
     }));
 
-    // Calculator trends over time
     const getCalculatorTrends = () => {
       const baseData = (() => {
         switch (period) {
           case "Daily":
-            return analytics.dailyCalculations.map((calc: any) => ({
+            return analytics.dailyCalculations.slice().reverse().slice(0, 60).map((calc: any) => ({
               date: calc._id,
               total: calc.count,
             }));
@@ -125,19 +144,28 @@ export const AnalyticsDashboard = () => {
         }
       })();
 
-      // Distribute total calculations among different calculator types
-      // This is an approximation since individual calculator data over time isn't available
+      const totalCalculations = analytics.mostUsedCalculators.reduce(
+        (sum, calc) => sum + calc.count,
+        0
+      );
+      const calculatorRatios = analytics.mostUsedCalculators.reduce(
+        (acc, calc) => {
+          acc[calc.name] = calc.count / totalCalculations;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+
       return baseData.map((item: any) => ({
         date: item.date,
-        BMI: Math.floor(item.total * 0.35), // Assuming BMI is 35% of total
-        IBW: Math.floor(item.total * 0.25), // IBW is 25% of total
-        WHR: Math.floor(item.total * 0.2), // WHR is 20% of total
-        BMR: Math.floor(item.total * 0.15), // BMR is 15% of total
-        EE: Math.floor(item.total * 0.05), // EE is 5% of total
+        BMI: Math.floor(item.total * (calculatorRatios.BMI || 0)),
+        IBW: Math.floor(item.total * (calculatorRatios.IBW || 0)),
+        WHR: Math.floor(item.total * (calculatorRatios.WHR || 0)),
+        BMR: Math.floor(item.total * (calculatorRatios.BMR || 0)),
+        EE: Math.floor(item.total * (calculatorRatios.EE || 0)),
       }));
     };
 
-    // User activity distribution
     const userActivityData = analytics.dailyUsage
       .slice(0, 8)
       .map((usage: any, index: number) => {
@@ -149,28 +177,26 @@ export const AnalyticsDashboard = () => {
         };
       });
 
-    // Food diary usage (using user calculations as proxy)
-    const foodDiaryData = analytics.userCalculations
+    const topCalculatorUsersData = analytics.userCalculations
       .slice(0, 8)
       .map((user: any) => ({
-        date: user.name.substring(0, 6), // Truncate name for date-like display
-        logs: user.totalCalculations,
-        users: Math.floor(user.totalCalculations / 3), // Approximate users from logs
+        user: user.name.substring(0, 10),
+        calculations: user.totalCalculations,
+        avgPerDay: Math.floor(user.totalCalculations / 30),
       }));
 
     return {
-      foodiPointData,
+      topUsersData,
       roleData,
       dailySignupData,
       usageData: getUsageData(),
       calculatorData,
       calculatorTrends: getCalculatorTrends(),
       userActivityData,
-      foodDiaryData,
+      topCalculatorUsersData,
     };
   }, [analytics, period, usagePeriod]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
@@ -187,23 +213,28 @@ export const AnalyticsDashboard = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
         <div className="col-span-2 bg-red-50 border border-red-200 rounded-lg p-4 text-center">
           <p className="text-red-600">Error loading analytics: {error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  // No data state
   if (!analytics || !chartData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
         <div className="col-span-2 bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
           <p className="text-gray-600">No analytics data available</p>
+          <button onClick={handleRefresh}>Load Analytics</button>
         </div>
       </div>
     );
@@ -211,26 +242,24 @@ export const AnalyticsDashboard = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-      {/* Foodipoint Usage */}
       <div className="bg-white rounded-lg p-4 shadow">
         <h2 className="text-lg font-semibold mb-4">
           Top Users by Calculations
         </h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
-            data={chartData.foodiPointData}
+            data={chartData.topUsersData}
             margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="foodiPoints" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="calculations" fill="#3b82f6" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* User Roles Distribution */}
       <div className="bg-white rounded-lg p-4 shadow">
         <h2 className="text-lg font-semibold mb-4">User Roles Distribution</h2>
         <ResponsiveContainer width="100%" height={300}>
@@ -257,7 +286,6 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Daily Signup Rate */}
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">Daily Signup Rate</h2>
         <ResponsiveContainer width="100%" height={250}>
@@ -276,7 +304,6 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Usage Chart */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">{usagePeriod} Usage</h2>
@@ -302,7 +329,6 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Most Used Calculators */}
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">Most Used Calculators</h2>
         <ResponsiveContainer width="100%" height={300}>
@@ -316,7 +342,6 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Calculator Usage Over Time */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Calculator Usage Over Time</h2>
@@ -377,7 +402,6 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* User Activity Distribution */}
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">
           User Activity Distribution
@@ -405,28 +429,27 @@ export const AnalyticsDashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Food Diary Usage */}
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-2">Top Calculator Users</h2>
         <ResponsiveContainer width="100%" height={250}>
-          <ComposedChart data={chartData.foodDiaryData}>
+          <ComposedChart data={chartData.topCalculatorUsersData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
+            <XAxis dataKey="user" />
             <YAxis />
             <Tooltip />
             <Legend />
             <Bar
-              dataKey="logs"
+              dataKey="calculations"
               barSize={20}
               fill="#f97316"
-              name="Calculations"
+              name="Total Calculations"
             />
             <Line
               type="monotone"
-              dataKey="users"
+              dataKey="avgPerDay"
               stroke="#3b82f6"
               strokeWidth={2}
-              name="Avg per User"
+              name="Avg per Day"
             />
           </ComposedChart>
         </ResponsiveContainer>
