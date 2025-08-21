@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { User } from "../../types/user";
 import { FOODIMETRIC_HOST_URL } from "../../../../utils";
+import { useAnalytics } from "../../../../contexts/AnalyticsContext";
 
 interface Props {
   user: User;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export const CreditAdjustModal = ({ user, onClose }: Props) => {
+  const { refetch } = useAnalytics();
   const [amount, setAmount] = useState<Number | null >(null);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export const CreditAdjustModal = ({ user, onClose }: Props) => {
         );
       }
 
-
+      await refetch(); 
       toast.success(
         `Successfully adjusted ${amount} credit for ${user.firstName} ${user.lastName}`,
         {

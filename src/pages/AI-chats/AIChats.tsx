@@ -3,16 +3,19 @@ import { SkeletonBox } from "../../components/SkeletonBox";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
 
 interface ChatUser {
-  id: number;
+  id: string;
+  name: string;
   email: string;
-  firstName: string;
-  lastName: string;
   totalPrompts: number;
   lastUsageDate: string;
-  chats: string[];
+  chats: Array<{
+    id: string;
+    text: string;
+    createdAt: string;
+  }>;
 }
 
-const ITEMS_PER_PAGE = 9; 
+const ITEMS_PER_PAGE = 9;
 
 export const AIChatDashboard = () => {
   const [users, setUsers] = useState<ChatUser[]>([]);
@@ -21,6 +24,7 @@ export const AIChatDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [messageCount, setMessageCount] = useState(0);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -47,37 +51,62 @@ export const AIChatDashboard = () => {
             errorData?.error || `HTTP error! status: ${response.status}`
           );
         }
-
         const data = await response.json();
 
+        setMessageCount(data.count);
         const messages = data.messages || [];
 
-        const userMessagesMap = new Map();
+        // Create a map to group messages by user
+        const userMessagesMap = new Map<string, ChatUser>();
 
         messages.forEach((message: any) => {
-          const userId = message.user_id;
+          const userId = message.user.id;
+          const userName = message.user.name;
+          const userEmail = message.user.email;
+
           if (!userMessagesMap.has(userId)) {
             userMessagesMap.set(userId, {
               id: userId,
-              email: `user-${userId.slice(-8)}@example.com`, 
-              firstName: `User`,
-              lastName: userId.slice(-4), 
+              name: userName,
+              email: userEmail,
               totalPrompts: 0,
               lastUsageDate: message.createdAt,
               chats: [],
             });
           }
 
-          const userEntry = userMessagesMap.get(userId);
+          const userEntry = userMessagesMap.get(userId)!;
           userEntry.totalPrompts += 1;
-          userEntry.chats.push(message.text);
+          userEntry.chats.push({
+            id: message.id,
+            text: message.text,
+            createdAt: message.createdAt,
+          });
 
+          // Update last usage date if this message is more recent
           if (new Date(message.createdAt) > new Date(userEntry.lastUsageDate)) {
             userEntry.lastUsageDate = message.createdAt;
           }
         });
 
-        const mappedUsers = Array.from(userMessagesMap.values());
+        // Sort chats by creation date for each user (newest first)
+        const mappedUsers = Array.from(userMessagesMap.values()).map(
+          (user) => ({
+            ...user,
+            chats: user.chats.sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            ),
+          })
+        );
+
+        // Sort users by last usage date (most recent first)
+        mappedUsers.sort(
+          (a, b) =>
+            new Date(b.lastUsageDate).getTime() -
+            new Date(a.lastUsageDate).getTime()
+        );
 
         setUsers(mappedUsers);
       } catch (error) {
@@ -93,14 +122,10 @@ export const AIChatDashboard = () => {
     fetchMessages();
   }, []);
 
-  // const handleCreateUser = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  // };
-
-  const filteredUsers = users.filter((user) =>
-    `${user.firstName} ${user.lastName}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
@@ -117,14 +142,50 @@ export const AIChatDashboard = () => {
         return;
       }
 
-      const dataToExport = JSON.stringify(filteredUsers, null, 2);
-      const blob = new Blob([dataToExport], { type: "application/json" });
+      // Create formatted text content
+      let exportContent = `AI CHAT MESSAGES EXPORT\n`;
+      exportContent += `Generated on: ${new Date().toLocaleString()}\n`;
+      exportContent += `Total Users: ${filteredUsers.length}\n`;
+      exportContent += `Total Messages: ${filteredUsers.reduce(
+        (sum, user) => sum + user.totalPrompts,
+        0
+      )}\n`;
+      exportContent += `\n${"=".repeat(80)}\n\n`;
+
+      filteredUsers.forEach((user, userIndex) => {
+        exportContent += `USER ${userIndex + 1}\n`;
+        exportContent += `Name: ${user.name}\n`;
+        exportContent += `Email: ${user.email}\n`;
+        exportContent += `Total Messages: ${user.totalPrompts}\n`;
+        exportContent += `Last Activity: ${new Date(
+          user.lastUsageDate
+        ).toLocaleString()}\n`;
+        exportContent += `\nMESSAGES:\n`;
+        exportContent += `${"-".repeat(40)}\n`;
+
+        user.chats.forEach((chat, chatIndex) => {
+          exportContent += `\n[${chatIndex + 1}] ${new Date(
+            chat.createdAt
+          ).toLocaleString()}\n`;
+          exportContent += `${chat.text}\n`;
+          if (chatIndex < user.chats.length - 1) {
+            exportContent += `${".".repeat(20)}\n`;
+          }
+        });
+
+        exportContent += `\n${"=".repeat(80)}\n\n`;
+      });
+
+      // Create and download the file
+      const blob = new Blob([exportContent], {
+        type: "text/plain;charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `ai-chat-messages-${
         new Date().toISOString().split("T")[0]
-      }.json`;
+      }.txt`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -162,6 +223,7 @@ export const AIChatDashboard = () => {
         <button
           onClick={exportMessages}
           className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm"
+          disabled={loading}
         >
           Export Messages
         </button>
@@ -170,7 +232,7 @@ export const AIChatDashboard = () => {
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
-          placeholder="Search by name..."
+          placeholder="Search by name or email..."
           className="border border-gray-300 rounded-md px-3 py-2 w-full max-w-sm"
           value={searchTerm}
           onChange={(e) => {
@@ -178,8 +240,9 @@ export const AIChatDashboard = () => {
             setCurrentPage(1);
           }}
         />
-        <div className="text-sm text-gray-600">
-          Total Users: {filteredUsers.length}
+        <div className="text-lg font-semibold text-gray-600">
+          <p className="">{`Total message: ${messageCount}`}</p>
+          <p className="">Total Users: {filteredUsers.length}</p>
         </div>
       </div>
 
@@ -199,9 +262,7 @@ export const AIChatDashboard = () => {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-lg">
-                      {user.firstName} {user.lastName}
-                    </h3>
+                    <h3 className="font-bold text-lg">{user.name}</h3>
                     <p className="text-sm text-gray-600 mb-1">{user.email}</p>
                     <p className="text-sm text-gray-600">
                       Total Prompts: {user.totalPrompts}
@@ -281,13 +342,17 @@ export const AIChatDashboard = () => {
               &times;
             </button>
             <h3 className="text-lg font-semibold mb-4">
-              Chats by {selectedUser.firstName} {selectedUser.lastName}
+              Chats by {selectedUser.name}
             </h3>
+            <div className="mb-3 text-sm text-gray-600">
+              Email: {selectedUser.email} | Total Messages:{" "}
+              {selectedUser.totalPrompts}
+            </div>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {selectedUser.chats.length > 0 ? (
                 selectedUser.chats.map((chat, idx) => (
                   <div
-                    key={idx}
+                    key={chat.id}
                     className="bg-gray-50 rounded-lg p-4 text-sm border"
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -295,10 +360,10 @@ export const AIChatDashboard = () => {
                         Message {idx + 1}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date().toLocaleDateString()}
+                        {new Date(chat.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-gray-800">{chat}</p>
+                    <p className="text-gray-800">{chat.text}</p>
                   </div>
                 ))
               ) : (

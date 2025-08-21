@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { Table } from "./components/Table";
 import { useAnalytics } from "../../contexts/AnalyticsContext";
@@ -6,11 +6,15 @@ import { FileDown, UserRoundX } from "lucide-react";
 
 export const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { analytics, loading, error } = useAnalytics();
+  const { analytics, loading, error, refetch } = useAnalytics();
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
   };
+
+  useEffect(() => {
+    refetch()
+  },[])
 
   // Transform analytics data to User format
   const userData = useMemo(() => {
@@ -33,6 +37,16 @@ export const UserManagementPage = () => {
           })
         : "Unknown",
       verified: user.isVerified,
+      longestStreak: user.longestStreak,
+      location: user.location,
+      streak: user.streak,
+      healthProfile: user.healthProfile,
+      latestCalculation: user.latestCalculation,
+      partnerDetails: user.partnerDetails,
+      status: user.status,
+      latestFoodLogs: user.latestFoodLogs,
+      notifications: user.notifications,
+      fcmTokens: user.fcmTokens,
     }));
   }, [analytics]);
 

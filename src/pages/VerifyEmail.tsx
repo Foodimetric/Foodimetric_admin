@@ -3,11 +3,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FOODIMETRIC_HOST_URL } from "../utils";
+import { useAnalytics } from "../contexts/AnalyticsContext";
 
 const VerifyEmail = () => {
+  const { refetch } = useAnalytics(); 
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || "";
+  
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -106,7 +109,8 @@ const VerifyEmail = () => {
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("userRole", data.role);
       }
-
+      await refetch()
+      
       toast.success("Email verified successfully!");
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (error: any) {

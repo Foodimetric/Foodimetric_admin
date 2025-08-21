@@ -1,9 +1,44 @@
-import { ShieldAlert, Trash2 } from "lucide-react";
+import { FlameKindling, ShieldAlert, Trash2 } from "lucide-react";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
 
 export const Actions = () => {
-
   const isFirstDay = new Date().getDate() === 1;
+
+  const resetStreak = async () => {
+    const user_token = localStorage.getItem("authToken");
+    if (!user_token) {
+      alert("No authentication token found. Please log in.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${FOODIMETRIC_HOST_URL}/admin/reset-streaks`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || "Something went wrong");
+      }
+
+      const data = await response.json();
+      alert(data.message || "Streak reset successfully.");
+    } catch (error) {
+      console.error("Error resetting streaks:", error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred while resetting streaks.");
+      }
+    }
+  };
 
   const monthlyCredit = async () => {
     if (!isFirstDay) {
@@ -94,6 +129,22 @@ export const Actions = () => {
           } w-full py-3 px-4  text-white rounded-lg flex items-center justify-center gap-2 transition`}
         >
           <Trash2 size={18} /> Reset All User Credits to 1000
+        </button>
+      </div>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-4">
+        <h2 className="text-xl font-semibold text-red-700 flex items-center gap-2">
+          <ShieldAlert className="text-red-600" /> Reset Streaks
+        </h2>
+        <p className="text-sm text-red-600 leading-relaxed">
+          <br />
+          This action is to <span className="font-bold">reset</span> streak
+          every <b>24 hours</b>.
+        </p>
+        <button
+          onClick={resetStreak}
+          className={`w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center gap-2 `} 
+        >
+          <FlameKindling size={18} /> Reset Streak
         </button>
       </div>
     </div>

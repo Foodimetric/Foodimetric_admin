@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import foodimetricLogo from "/img/logo.png";
 import { FOODIMETRIC_HOST_URL } from "../utils";
 import { toast, ToastContainer } from "react-toastify";
-import { useAnalytics } from "../contexts/AnalyticsContext";
+// import { useAnalytics } from "../contexts/AnalyticsContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { clearData } = useAnalytics();
+  // const { clearData } = useAnalytics();
   const [role, setRole] = useState("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +19,7 @@ const Login = () => {
     setLoading(true);
     setError("");
 
-    clearData();
+    // clearData();
 
     try {
       const response = await fetch(`${FOODIMETRIC_HOST_URL}/admin/login`, {

@@ -29,6 +29,9 @@ export const AnalyticsDashboard = () => {
   const [usagePeriod, setUsagePeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
+  const [signupPeriod, setSignupPeriod] = useState<
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
+  >("Daily");
 
   const handleRefresh = async () => {
     await refetch();
@@ -73,10 +76,35 @@ export const AnalyticsDashboard = () => {
         })
       : [];
 
-    const dailySignupData = analytics.dailySignups.slice(0, 30).map((signup: any) => ({
-      date: signup._id,
-      signups: signup.count,
-    }));
+    const getSignupData = () => {
+      switch (signupPeriod) {
+        case "Daily":
+          return analytics.dailySignups.slice(0, 30).map((signup: any) => ({
+            date: signup._id,
+            signups: signup.count,
+          }));
+        case "Weekly":
+          return analytics.weeklySignupStat.map((signup: any) => ({
+            date: signup.week,
+            signups: signup.count,
+          }));
+        case "Monthly":
+          return analytics.monthlySignupStat.map((signup: any) => ({
+            date: signup.month,
+            signups: signup.count,
+          }));
+        case "Yearly":
+          return analytics.yearlySignupStat.map((signup: any) => ({
+            date: signup.year,
+            signups: signup.count,
+          }));
+        default:
+          return analytics.dailySignups.slice(0, 30).map((signup: any) => ({
+            date: signup._id,
+            signups: signup.count,
+          }));
+      }
+    };
 
     const getUsageData = () => {
       switch (usagePeriod) {
@@ -86,19 +114,19 @@ export const AnalyticsDashboard = () => {
             usage: usage.count,
           }));
         case "Weekly":
-          return analytics.weeklyCalculations.map((calc: any) => ({
-            date: calc.week,
-            usage: calc.count,
+          return analytics.weeklyUsage.map((usage: any) => ({
+            date: usage.week,
+            usage: usage.count,
           }));
         case "Monthly":
-          return analytics.monthlyCalculations.map((calc: any) => ({
-            date: calc.month,
-            usage: calc.count,
+          return analytics.monthlyUsage.map((usage: any) => ({
+            date: usage.month,
+            usage: usage.count,
           }));
         case "Yearly":
-          return analytics.yearlyCalculations.map((calc: any) => ({
-            date: calc.year,
-            usage: calc.count,
+          return analytics.yearlyUsage.map((usage: any) => ({
+            date: usage.year,
+            usage: usage.count,
           }));
         default:
           return analytics.dailyUsage.map((usage: any) => ({
@@ -117,10 +145,12 @@ export const AnalyticsDashboard = () => {
       const baseData = (() => {
         switch (period) {
           case "Daily":
-            return analytics.dailyCalculations.slice().reverse().slice(0, 60).map((calc: any) => ({
-              date: calc._id,
-              total: calc.count,
-            }));
+            return analytics.dailyCalculations
+              .slice(0, 60)
+              .map((calc: any) => ({
+                date: calc._id,
+                total: calc.count,
+              }));
           case "Weekly":
             return analytics.weeklyCalculations.map((calc: any) => ({
               date: calc.week,
@@ -188,14 +218,14 @@ export const AnalyticsDashboard = () => {
     return {
       topUsersData,
       roleData,
-      dailySignupData,
+      signupData: getSignupData(),
       usageData: getUsageData(),
       calculatorData,
       calculatorTrends: getCalculatorTrends(),
       userActivityData,
       topCalculatorUsersData,
     };
-  }, [analytics, period, usagePeriod]);
+  }, [analytics, period, usagePeriod, signupPeriod]);
 
   if (loading) {
     return (
@@ -287,9 +317,23 @@ export const AnalyticsDashboard = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-lg font-semibold mb-2">Daily Signup Rate</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold mb-2">
+            {signupPeriod} Signup Rate
+          </h2>
+          <select
+            className="border px-2 py-1 rounded text-sm"
+            value={signupPeriod}
+            onChange={(e) => setSignupPeriod(e.target.value as any)}
+          >
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData.dailySignupData}>
+          <LineChart data={chartData.signupData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />

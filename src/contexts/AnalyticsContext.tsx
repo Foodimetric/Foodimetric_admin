@@ -1,7 +1,6 @@
 import React, {
   createContext,
   useContext,
-  useEffect,
   useState,
   ReactNode,
 } from "react";
@@ -12,7 +11,13 @@ type WeeklyCalculation = DailyCalculation & { week: string };
 type MonthlyCalculation = DailyCalculation & { month: string };
 type YearlyCalculation = DailyCalculation & { year: string };
 type DailyUsage = { _id: string; count: number };
+type WeeklyUsage = DailyUsage & { week: string };
+type MonthlyUsage = DailyUsage & { month: string };
+type YearlyUsage = DailyUsage & { year: string }
 type DailySignup = { _id: string; count: number };
+type WeeklySignupStat = DailySignup & { week: string };
+type MonthlySignupStat = DailySignup & { month: string };
+type YearlySignupStat = DailySignup & { year: string }
 
 type UserCalculation = {
   name: string;
@@ -31,11 +36,23 @@ type TopUser = {
 type AnthropometricStats = { weekly: number };
 
 type UserData = {
+  status: any;
+  fcmTokens: any;
+  notifications: any;
+  partner: any;
+  partnerDetails: any;
+  partnerInvites: any;
+  latestFoodLogs: any;
+  location: string;
+  healthProfile: any;
+  longestStreak: number;
+  streak: any;
+  latestCalculation: any;
   suspended: boolean;
   category: number;
   usage: number;
   googleId: string;
-  lastUsageDate: string | null;
+  lastUsageDate: string;
   _id: string;
   email: string;
   firstName: string;
@@ -57,7 +74,13 @@ export type AnalyticsData = {
   monthlyCalculations: MonthlyCalculation[];
   yearlyCalculations: YearlyCalculation[];
   dailyUsage: DailyUsage[];
+  weeklyUsage: WeeklyUsage[];
+  monthlyUsage: MonthlyUsage[];
+  yearlyUsage: YearlyUsage[];
   dailySignups: DailySignup[];
+  weeklySignupStat: WeeklySignupStat[];
+  monthlySignupStat: MonthlySignupStat[];
+  yearlySignupStat: YearlySignupStat[];
   mostUsedCalculators: MostUsedCalculator[];
   topUsers: TopUser[];
   anthropometricStats: AnthropometricStats;
@@ -68,7 +91,7 @@ export type AnalyticsData = {
   totalUsers: number;
   totalAnthropometricCalculations: number;
   newsletterSubscribers?: { email: string }[];
-  roleDistribution: RoleDistribution[]; 
+  roleDistribution: RoleDistribution[];
 };
 
 interface AnalyticsContextType {
@@ -93,7 +116,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+  const [, setHasInitialized] = useState<boolean>(false);
 
   const fetchAnalytics = async () => {
     const token = localStorage.getItem("authToken");
@@ -129,8 +152,8 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
         err instanceof Error ? err.message : "An unknown error occurred"
       );
       if (err instanceof Error && err.message.includes("401")) {
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userRole");
+        // localStorage.removeItem("authToken");
+        // localStorage.removeItem("userRole");
       }
     } finally {
       setLoading(false);
@@ -144,32 +167,41 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
     setLoading(false);
   };
 
-  useEffect(() => {
-    const initializeAnalytics = async () => {
-      const token = localStorage.getItem("authToken");
-      const currentPath = window.location.pathname;
+  // useEffect(() => {
+  //   const initializeAnalytics = async () => {
+  //     const token = localStorage.getItem("authToken");
+  //     const currentPath = window.location.pathname;
 
-      const isPublicRoute =
-        currentPath.includes("/login") || currentPath.includes("/verify-email");
+  //     const isPublicRoute =
+  //       currentPath.includes("/login") || currentPath.includes("/verify-email");
 
-      if (token && !hasInitialized && !analytics && !isPublicRoute) {
-        await fetchAnalytics();
-      }
-    };
+  //     if (token && !hasInitialized && !analytics && !isPublicRoute) {
+  //       await fetchAnalytics();
+  //     }
+  //   };
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "authToken" && !e.newValue) {
-        clearData();
-      }
-    };
+  //   const handleStorageChange = (e: StorageEvent) => {
+  //     if (e.key === "authToken" && !e.newValue) {
+  //       clearData();
+  //     }
+  //   };
 
-    window.addEventListener("storage", handleStorageChange);
-    initializeAnalytics();
+  //   window.addEventListener("storage", handleStorageChange);
+  //   initializeAnalytics();
 
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, [hasInitialized, analytics]);
+  //   return () => {
+  //     window.removeEventListener("storage", handleStorageChange);
+  //   };
+  // }, [hasInitialized, analytics]);
+
+    // const token = localStorage.getItem("authToken");
+
+  // useEffect(() => {
+  //   // const token = localStorage.getItem("authToken");
+  //   if (token) {
+  //     fetchAnalytics();
+  //   }
+  // }, [token])
 
   const contextValue: AnalyticsContextType = {
     analytics,

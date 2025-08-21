@@ -52,6 +52,16 @@ export const Table = ({
           })
         : "Unknown",
       verified: user.isVerified,
+      longestStreak: user.longestStreak,
+      location: user.location,
+      streak: user.streak,
+      healthProfile: user.healthProfile,
+      latestCalculation: user.latestCalculation,
+      partnerDetails: user.partnerDetails,
+      status: user.status,
+      latestFoodLogs: user.latestFoodLogs,
+      notifications: user.notifications,
+      fcmTokens: user.fcmTokens,
     })) ||
     [];
 
@@ -224,7 +234,7 @@ export const Table = ({
                 <td className="p-3 capitalize">{user.lastName}</td>
                 <td className="p-3">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {user.usage.toLocaleString()}
+                    {user?.usage?.toLocaleString()}
                   </span>
                 </td>
                 <td className="p-3">{getRole(user.category)}</td>
@@ -241,7 +251,7 @@ export const Table = ({
                         : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {user.credits.toLocaleString()}
+                    {user?.credits?.toLocaleString()}
                   </span>
                 </td>
                 <td className="p-3 text-gray-600">{user.lastUsageDate}</td>
