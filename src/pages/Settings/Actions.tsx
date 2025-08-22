@@ -131,7 +131,7 @@ export const Actions = () => {
           <Trash2 size={18} /> Reset All User Credits to 1000
         </button>
       </div>
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-4">
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-4 mt-10">
         <h2 className="text-xl font-semibold text-red-700 flex items-center gap-2">
           <ShieldAlert className="text-red-600" /> Reset Streaks
         </h2>

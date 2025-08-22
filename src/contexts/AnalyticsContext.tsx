@@ -1,9 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 import { FOODIMETRIC_HOST_URL } from "../utils";
 
 type DailyCalculation = { _id: string; count: number };
@@ -13,11 +8,22 @@ type YearlyCalculation = DailyCalculation & { year: string };
 type DailyUsage = { _id: string; count: number };
 type WeeklyUsage = DailyUsage & { week: string };
 type MonthlyUsage = DailyUsage & { month: string };
-type YearlyUsage = DailyUsage & { year: string }
+type YearlyUsage = DailyUsage & { year: string };
 type DailySignup = { _id: string; count: number };
 type WeeklySignupStat = DailySignup & { week: string };
 type MonthlySignupStat = DailySignup & { month: string };
-type YearlySignupStat = DailySignup & { year: string }
+type YearlySignupStat = DailySignup & { year: string };
+type FoodDiaryStatsBase = { count: number }
+type DailyFoodDiaryStats = FoodDiaryStatsBase & { _id: string | null }
+type WeeklyFoodDiaryStats = FoodDiaryStatsBase & { week: string };
+type MonthlyFoodDiaryStats = FoodDiaryStatsBase & { month: string };
+type YearlyFoodDiaryStats = FoodDiaryStatsBase & { year: string };
+type FoodDiaryStatsResponse = {
+  daily: DailyFoodDiaryStats[];
+  weekly: WeeklyFoodDiaryStats[];
+  monthly: MonthlyFoodDiaryStats[];
+  yearly: YearlyFoodDiaryStats[];
+};
 
 type UserCalculation = {
   name: string;
@@ -81,6 +87,7 @@ export type AnalyticsData = {
   weeklySignupStat: WeeklySignupStat[];
   monthlySignupStat: MonthlySignupStat[];
   yearlySignupStat: YearlySignupStat[];
+  foodDiaryStats: FoodDiaryStatsResponse;
   mostUsedCalculators: MostUsedCalculator[];
   topUsers: TopUser[];
   anthropometricStats: AnthropometricStats;
@@ -194,7 +201,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   //   };
   // }, [hasInitialized, analytics]);
 
-    // const token = localStorage.getItem("authToken");
+  // const token = localStorage.getItem("authToken");
 
   // useEffect(() => {
   //   // const token = localStorage.getItem("authToken");

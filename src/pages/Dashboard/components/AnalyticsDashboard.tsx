@@ -32,6 +32,9 @@ export const AnalyticsDashboard = () => {
   const [signupPeriod, setSignupPeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
+  const [foodDiaryPeriod, setFoodDiaryPeriod] = useState<
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
+  >("Daily");
 
   const handleRefresh = async () => {
     await refetch();
@@ -40,12 +43,43 @@ export const AnalyticsDashboard = () => {
   const chartData = useMemo(() => {
     if (!analytics) return null;
 
-    const topUsersData = analytics.userCalculations
-      .slice(0, 4)
-      .map((user: any) => ({
-        name: user.name,
-        calculations: user.totalCalculations || 0,
-      }));
+    // const topUsersData = analytics.userCalculations
+    //   .slice(0, 4)
+    //   .map((user: any) => ({
+    //     name: user.name,
+    //     calculations: user.totalCalculations || 0,
+    //   }));
+    console.log(analytics.foodDiaryStats);
+
+    const getFoodDiaryStats = () => {
+      switch (foodDiaryPeriod) {
+        case "Daily":
+          return analytics.foodDiaryStats.daily.map((diary: any) => ({
+            date: diary._id,
+            count: diary.count,
+          }));
+        case "Weekly":
+          return analytics.foodDiaryStats.weekly.map((diary: any) => ({
+            date: diary.week,
+            count: diary.count,
+          }));
+        case "Monthly":
+          return analytics.foodDiaryStats.monthly.map((diary: any) => ({
+            date: diary.month,
+            count: diary.count,
+          }));
+        case "Yearly":
+          return analytics.foodDiaryStats.yearly.map((diary: any) => ({
+            date: diary.year ?? "Unspecified",
+            count: diary.count,
+          }));
+        default:
+          return analytics.foodDiaryStats.daily.map((diary: any) => ({
+            date: diary._id,
+            count: diary.count,
+          }));
+      }
+    };
 
     const roleData = analytics.roleDistribution
       ? Object.entries(analytics.roleDistribution).map(([key, value]) => {
@@ -216,16 +250,16 @@ export const AnalyticsDashboard = () => {
       }));
 
     return {
-      topUsersData,
       roleData,
       signupData: getSignupData(),
       usageData: getUsageData(),
+      foodDiaryData: getFoodDiaryStats(),
       calculatorData,
       calculatorTrends: getCalculatorTrends(),
       userActivityData,
       topCalculatorUsersData,
     };
-  }, [analytics, period, usagePeriod, signupPeriod]);
+  }, [analytics, period, usagePeriod, signupPeriod, foodDiaryPeriod]);
 
   if (loading) {
     return (
@@ -269,23 +303,37 @@ export const AnalyticsDashboard = () => {
       </div>
     );
   }
-
+  console.log(chartData.foodDiaryData)
+  // console.log(chartData.usageData)
+  // console.log(chartData.topCalculatorUsersData)
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
       <div className="bg-white rounded-lg p-4 shadow">
-        <h2 className="text-lg font-semibold mb-4">
-          Top Users by Calculations
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold mb-2">
+            {foodDiaryPeriod} Food Diary Stats
+          </h2>
+          <select
+            className="border px-2 py-1 rounded text-sm"
+            value={foodDiaryPeriod}
+            onChange={(e) => setFoodDiaryPeriod(e.target.value as any)}
+          >
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
-            data={chartData.topUsersData}
+            data={chartData.foodDiaryData}
             margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="calculations" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

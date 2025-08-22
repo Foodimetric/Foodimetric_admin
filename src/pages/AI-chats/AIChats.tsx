@@ -26,6 +26,9 @@ export const AIChatDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [messageCount, setMessageCount] = useState(0);
 
+  const currentUserRole = localStorage.getItem("userRole");
+  const isMarketing = currentUserRole === "marketing";
+
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -222,8 +225,12 @@ export const AIChatDashboard = () => {
         <h2 className="text-2xl font-semibold mb-4">AI Chats</h2>
         <button
           onClick={exportMessages}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm"
-          disabled={loading}
+          className={` text-white px-4 py-2 rounded-md text-sm ${
+            isMarketing
+              ? "cursor-not-allowed bg-gray-300"
+              : "bg-blue-500 hover:bg-blue-600  cursor-pointer"
+          }`}
+          disabled={isMarketing || loading}
         >
           Export Messages
         </button>

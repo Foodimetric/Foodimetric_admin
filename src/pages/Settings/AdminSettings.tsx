@@ -1,5 +1,4 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
 import { Settings } from "lucide-react";
 import { GeneralSettings } from "./GeneralSettings";
 import { UserManagement } from "./UserManagement";
@@ -9,25 +8,20 @@ import { Actions } from "./Actions";
 export const AdminSettings = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [userRegistration, setUserRegistration] = useState(true);
+  const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("admin");
   const [showModal, setShowModal] = useState(false);
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success(`Login credentials sent to ${newEmail}`);
-    setShowModal(false);
-    setNewEmail("");
-    setNewPassword("");
-    setNewRole("admin");
-  };
-
   const currentUserRole = localStorage.getItem("userRole");
-  const isSuperAdmin = currentUserRole === "super_admin";
+  const isSuperAdmin =
+    currentUserRole === "super-admin" || currentUserRole === "super_admin";
   const isAdmin = currentUserRole === "admin";
-  const isMarketing = currentUserRole === "marketing";
-  const isDeveloper = currentUserRole === "developer";
+  const isMarketing =
+    currentUserRole === "marketing" || currentUserRole === "moderator";
+  const isDeveloper =
+    currentUserRole === "developer" || currentUserRole === "super-admin";
 
   // Helper function to get role display name and styling
   const getRoleDisplay = () => {
@@ -61,9 +55,17 @@ export const AdminSettings = () => {
 
   const roleDisplay = getRoleDisplay();
 
-  const canManageSettings = isSuperAdmin || isAdmin;
-  const canManageUsers = isSuperAdmin || isAdmin;
-  const canAccessActions = isSuperAdmin || isAdmin || isDeveloper;
+  const canManageSettings = isSuperAdmin || isAdmin || isDeveloper;
+  const canManageUsers = isSuperAdmin;
+  const canAccessActions = isSuperAdmin || isAdmin;
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setNewName("");
+    setNewEmail("");
+    setNewPassword("");
+    setNewRole("admin");
+  };
 
   return (
     <div className="space-y-6">
@@ -91,7 +93,7 @@ export const AdminSettings = () => {
 
       {canAccessActions && <Actions />}
 
-      {isMarketing && (
+      {isMarketing && !isAdmin && !isSuperAdmin && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-yellow-800 mb-2">
             Limited Access
@@ -116,14 +118,15 @@ export const AdminSettings = () => {
 
       {showModal && canManageUsers && (
         <CreateUserModal
+          name={newName}
           email={newEmail}
           password={newPassword}
           role={newRole}
+          setName={setNewName}
           setEmail={setNewEmail}
           setPassword={setNewPassword}
           setRole={setNewRole}
-          onClose={() => setShowModal(false)}
-          onSubmit={handleCreateUser}
+          onClose={handleModalClose}
         />
       )}
     </div>
