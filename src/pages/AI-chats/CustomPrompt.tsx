@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
 
 const categoryOptions = [
@@ -22,6 +22,7 @@ export const CustomPrompts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchPrompts = async () => {
     try {
@@ -67,6 +68,61 @@ export const CustomPrompts = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeletePrompt = async (prompt: {
+    id: string;
+    content: string;
+    category: string;
+  }) => {
+    try {
+      setDeleting(prompt.id);
+      setError(null);
+
+      const user_token = localStorage.getItem("authToken");
+      if (!user_token) {
+        throw new Error("No authentication token found. Please log in.");
+      }
+
+      const categoryNumber = categoryOptions.indexOf(prompt.category);
+
+      const response = await fetch(
+        `${FOODIMETRIC_HOST_URL}/prompt/delete-prompt`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user_token}`,
+          },
+          body: JSON.stringify({
+            category: categoryNumber,
+            prompt: prompt.content,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData?.error || `Failed to delete prompt: ${response.statusText}`
+        );
+      } 
+
+      alert("Are you sure, you want to delete prompt?")
+
+      const data = await response.json();
+      console.log("Prompt deleted successfully:", data);
+
+      // Refresh prompts after successful deletion
+      await fetchPrompts();
+    } catch (error) {
+      console.error("Error deleting prompt:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to delete prompt"
+      );
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -169,23 +225,42 @@ export const CustomPrompts = () => {
         </select>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Prompt Cards */}
       {loading ? (
         <p className="text-center text-sm text-gray-500">Loading prompts...</p>
-      ) : error ? (
-        <p className="text-center text-sm text-red-500">{error}</p>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPrompts.length > 0 ? (
             filteredPrompts.map((prompt) => (
               <div
                 key={prompt.id}
-                className="bg-gray-50 border p-4 rounded-xl shadow-sm space-y-1"
+                className="bg-gray-50 border p-4 rounded-xl shadow-sm space-y-1 relative group hover:shadow-md transition-shadow"
               >
                 <p className="text-sm text-gray-700">{prompt.content}</p>
                 <p className="text-xs text-gray-500">
                   Category: {prompt.category}
                 </p>
+
+                {/* Delete Button - Shows on Hover */}
+                <button
+                  onClick={() => handleDeletePrompt(prompt)}
+                  disabled={deleting === prompt.id}
+                  className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete prompt"
+                >
+                  {deleting === prompt.id ? (
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
+                </button>
               </div>
             ))
           ) : (

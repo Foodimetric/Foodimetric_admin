@@ -55,7 +55,7 @@ export const AnalyticsDashboard = () => {
       switch (foodDiaryPeriod) {
         case "Daily":
           return analytics.foodDiaryStats.daily.map((diary: any) => ({
-            date: diary._id,
+            date: diary._id ?? "Unspecified",
             count: diary.count,
           }));
         case "Weekly":
@@ -230,14 +230,17 @@ export const AnalyticsDashboard = () => {
       }));
     };
 
+    const calcMap = Object.fromEntries(
+      analytics.dailyCalculations.map((c: any) => [c._id, c.count])
+    );
+
     const userActivityData = analytics.dailyUsage
-      .slice(0, 8)
-      .map((usage: any, index: number) => {
-        const calculation = analytics.dailyCalculations[index];
+      .slice(0, 8) // keep your slicing logic
+      .map((usage: any) => {
         return {
           date: usage._id,
           logins: usage.count,
-          calculations: calculation ? calculation.count : 0,
+          calculations: calcMap[usage._id] || 0, // match by date, fallback to 0
         };
       });
 
@@ -303,7 +306,7 @@ export const AnalyticsDashboard = () => {
       </div>
     );
   }
-  console.log(chartData.foodDiaryData)
+  console.log(chartData.foodDiaryData);
   // console.log(chartData.usageData)
   // console.log(chartData.topCalculatorUsersData)
   return (

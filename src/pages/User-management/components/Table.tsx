@@ -215,6 +215,7 @@ export const Table = ({
               <th className="p-3 font-semibold">First Name</th>
               <th className="p-3 font-semibold">Last Name</th>
               <th className="p-3 font-semibold">Usage</th>
+              <th className="p-3 font-semibold">Streak</th>
               <th className="p-3 font-semibold">Role</th>
               <th className="p-3 font-semibold">Google ID</th>
               <th className="p-3 font-semibold">Credits</th>
@@ -237,6 +238,7 @@ export const Table = ({
                     {user?.usage?.toLocaleString()}
                   </span>
                 </td>
+                <td className="p-3">{user.streak}</td>
                 <td className="p-3">{getRole(user.category)}</td>
                 <td className="p-3 font-mono text-xs">
                   {user.googleId || "N/A"}
