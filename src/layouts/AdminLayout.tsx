@@ -14,6 +14,10 @@ import {
 import clsx from "clsx";
 import { NotificationBell } from "../components/NotificationBell";
 import { useAuth } from "../components/AuthContext";
+import {
+  ACTION_TYPES,
+  ActivityLogger,
+} from "../pages/Activity-log/context/ActivityLogContext";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -30,18 +34,19 @@ const navItems = [
   { name: "Settings", path: "/settings", icon: Settings },
 ];
 
-
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   // const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
 
- const handleLogout = () => {
-   if (window.confirm("Are you sure you want to logout?")) {
-     logout();
-   }
- };
+  const handleLogout = async () => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      await ActivityLogger.logActivity(ACTION_TYPES.LOGOUT);
+
+      logout();
+    }
+  };
 
   const closeSidebar = () => setMobileOpen(false);
 

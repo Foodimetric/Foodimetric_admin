@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, AlertTriangle } from "lucide-react";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
+import {
+  useActivityLog,
+  ACTION_TYPES,
+} from "../Activity-log/context/ActivityLogContext";
 
 const categoryOptions = [
   "Others", // category = 0
@@ -11,10 +15,18 @@ const categoryOptions = [
 ];
 
 export const CustomPrompts = () => {
+  const { logActivity } = useActivityLog();
+
   const [prompts, setPrompts] = useState<
     { id: string; content: string; category: string }[]
   >([]);
-
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [promptToDelete, setPromptToDelete] = useState<{
+    id: string;
+    content: string;
+    category: string;
+  } | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [modalOpen, setModalOpen] = useState(false);
   const [newPrompt, setNewPrompt] = useState("");
@@ -71,21 +83,33 @@ export const CustomPrompts = () => {
     }
   };
 
-  const handleDeletePrompt = async (prompt: {
+  const handleDeleteClick = (prompt: {
     id: string;
     content: string;
     category: string;
   }) => {
+    setPromptToDelete(prompt);
+    setDeleteConfirmOpen(true);
+    setDeleteReason("");
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!promptToDelete || deleteReason.trim().length < 3) {
+      setError("Please provide a reason with at least 3 characters");
+      return;
+    }
+
     try {
-      setDeleting(prompt.id);
+      setDeleting(promptToDelete.id);
       setError(null);
+      setDeleteConfirmOpen(false);
 
       const user_token = localStorage.getItem("authToken");
       if (!user_token) {
         throw new Error("No authentication token found. Please log in.");
       }
 
-      const categoryNumber = categoryOptions.indexOf(prompt.category);
+      const categoryNumber = categoryOptions.indexOf(promptToDelete.category);
 
       const response = await fetch(
         `${FOODIMETRIC_HOST_URL}/prompt/delete-prompt`,
@@ -97,7 +121,7 @@ export const CustomPrompts = () => {
           },
           body: JSON.stringify({
             category: categoryNumber,
-            prompt: prompt.content,
+            prompt: promptToDelete.content,
           }),
         }
       );
@@ -107,12 +131,17 @@ export const CustomPrompts = () => {
         throw new Error(
           errorData?.error || `Failed to delete prompt: ${response.statusText}`
         );
-      } 
-
-      alert("Are you sure, you want to delete prompt?")
+      }
 
       const data = await response.json();
       console.log("Prompt deleted successfully:", data);
+
+      // Log the delete action with all details in meta
+      await logActivity(ACTION_TYPES.DELETE_PROMPT, {
+        reason: deleteReason.trim(),
+        content: promptToDelete.content,
+        category: promptToDelete.category,
+      });
 
       // Refresh prompts after successful deletion
       await fetchPrompts();
@@ -123,24 +152,16 @@ export const CustomPrompts = () => {
       );
     } finally {
       setDeleting(null);
+      setPromptToDelete(null);
+      setDeleteReason("");
     }
   };
 
-  useEffect(() => {
-    fetchPrompts();
-  }, []);
-
-  const filteredPrompts = useMemo(() => {
-    if (selectedCategory === "All") return prompts;
-    return prompts.filter((p) => p.category === selectedCategory);
-  }, [prompts, selectedCategory]);
-
-  const relatedPrompts = useMemo(() => {
-    if (!newPrompt.trim()) return [];
-    return prompts.filter((p) =>
-      p.content.toLowerCase().includes(newPrompt.toLowerCase())
-    );
-  }, [newPrompt, prompts]);
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setPromptToDelete(null);
+    setDeleteReason("");
+  };
 
   const handleCreatePrompt = async () => {
     if (!newPrompt.trim()) {
@@ -181,6 +202,12 @@ export const CustomPrompts = () => {
       const data = await response.json();
       console.log("Prompt created successfully:", data);
 
+      // Log the create action (non-destructive)
+      await logActivity(ACTION_TYPES.CREATE_PROMPT, {
+        prompt: newPrompt.trim().substring(0, 100), // Truncate for logging
+        category: modalCategory,
+      });
+
       setNewPrompt("");
       setModalCategory(categoryOptions[0]);
       setModalOpen(false);
@@ -195,6 +222,22 @@ export const CustomPrompts = () => {
       setCreating(false);
     }
   };
+
+  useEffect(() => {
+    fetchPrompts();
+  }, []);
+
+  const filteredPrompts = useMemo(() => {
+    if (selectedCategory === "All") return prompts;
+    return prompts.filter((p) => p.category === selectedCategory);
+  }, [prompts, selectedCategory]);
+
+  const relatedPrompts = useMemo(() => {
+    if (!newPrompt.trim()) return [];
+    return prompts.filter((p) =>
+      p.content.toLowerCase().includes(newPrompt.toLowerCase())
+    );
+  }, [newPrompt, prompts]);
 
   return (
     <div>
@@ -250,9 +293,9 @@ export const CustomPrompts = () => {
 
                 {/* Delete Button - Shows on Hover */}
                 <button
-                  onClick={() => handleDeletePrompt(prompt)}
+                  onClick={() => handleDeleteClick(prompt)}
                   disabled={deleting === prompt.id}
-                  className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform translate-y-2 group-hover:translate-y-0 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   title="Delete prompt"
                 >
                   {deleting === prompt.id ? (
@@ -271,7 +314,78 @@ export const CustomPrompts = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => {}} // Prevent closing by clicking outside
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md bg-white p-6 rounded-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-orange-500" size={24} />
+                <Dialog.Title className="text-lg font-semibold text-gray-900">
+                  Delete Custom Prompt
+                </Dialog.Title>
+              </div>
+              <button
+                onClick={handleDeleteCancel}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={deleting !== null}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {promptToDelete && (
+              <div className="mb-6 p-3 bg-gray-50 rounded-md border">
+                <p className="text-xs text-gray-500 mb-1">Prompt to delete:</p>
+                <p className="text-sm text-gray-800 font-medium">
+                  {promptToDelete.content}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Category: {promptToDelete.category}
+                </p>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Please provide a reason for deleting this prompt:
+              </label>
+              <textarea
+                rows={3}
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Enter reason for deletion..."
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                disabled={deleting !== null}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDeleteCancel}
+                disabled={deleting !== null}
+                className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting !== null || deleteReason.trim().length < 3}
+                className="px-4 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleting ? "Deleting..." : "Delete Prompt"}
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Create Prompt Modal */}
       <Dialog
         open={modalOpen}
         onClose={() => setModalOpen(false)}

@@ -22,26 +22,26 @@ import { AnalyticsProvider } from "./contexts/AnalyticsContext";
 
 function App() {
   return (
-    <AuthProvider>
-      <AnalyticsProvider>
-        <Router>
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
-            <Route path="/verify-email" element={<VerifyEmail />} />
+    <ActivityLogProvider>
+      <AuthProvider>
+        <AnalyticsProvider>
+          <Router>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/verify-email" element={<VerifyEmail />} />
 
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <ActivityLogProvider>
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout>
                       <Routes>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/users" element={<UserManagementPage />} />
@@ -69,15 +69,15 @@ function App() {
                           element={<Navigate to="/dashboard" replace />}
                         />
                       </Routes>
-                    </ActivityLogProvider>
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Router>
-      </AnalyticsProvider>
-    </AuthProvider>
+                    </AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Router>
+        </AnalyticsProvider>
+      </AuthProvider>
+    </ActivityLogProvider>
   );
 }
 

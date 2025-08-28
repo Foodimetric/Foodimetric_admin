@@ -3,6 +3,7 @@ import { SearchBar } from "./components/SearchBar";
 import { Table } from "./components/Table";
 import { useAnalytics } from "../../contexts/AnalyticsContext";
 import { FileDown, UserRoundX } from "lucide-react";
+import { ACTION_TYPES, ActivityLogger } from "../Activity-log/context/ActivityLogContext";
 
 export const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,8 +14,8 @@ export const UserManagementPage = () => {
   };
 
   useEffect(() => {
-    refetch()
-  },[])
+    refetch();
+  }, []);
 
   // Transform analytics data to User format
   const userData = useMemo(() => {
@@ -72,7 +73,7 @@ export const UserManagementPage = () => {
     );
   }, [userData, searchTerm]);
 
-  const exportCSV = (users: typeof filteredUsers) => {
+  const exportCSV = async (users: typeof filteredUsers) => {
     if (users.length === 0) {
       alert("No data to export.");
       return;
@@ -114,6 +115,8 @@ export const UserManagementPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    await ActivityLogger.logActivity(ACTION_TYPES.EXPORT_USER_DATA);
   };
 
   return (
@@ -133,10 +136,14 @@ export const UserManagementPage = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => exportCSV(filteredUsers)}
-                disabled={filteredUsers.length === 0 || filteredUsers.length !== userData.length || loading}
+                disabled={
+                  filteredUsers.length === 0 ||
+                  filteredUsers.length !== userData.length ||
+                  loading
+                }
                 className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200 flex items-center gap-2"
               >
-                <FileDown className="-4 h-4"/>
+                <FileDown className="-4 h-4" />
                 Export CSV
               </button>
               <div className="text-lg font-bold px-3 py-2 bg-gray-100 rounded-md">

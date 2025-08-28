@@ -11,6 +11,10 @@ import {
 import { useState } from "react";
 import { useAnalytics } from "../../../../contexts/AnalyticsContext";
 import { FOODIMETRIC_HOST_URL } from "../../../../utils";
+import {
+  ACTION_TYPES,
+  useActivityLog,
+} from "../../../Activity-log/context/ActivityLogContext";
 
 interface Props {
   user: User;
@@ -45,9 +49,13 @@ const formatFCMToken = (token: string) => {
 };
 
 export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [activateLoading, setActivateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [message, setMessage] = useState("");
   const { analytics, refetch } = useAnalytics();
+  const { logDestructiveAction } = useActivityLog();
 
   // Get updated user data from analytics context or use initial user
   const analyticsUser = analytics?.allUsers.find(
@@ -105,39 +113,42 @@ export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
       return;
     }
 
-    if (
-      !window.confirm(
-        `Are you sure you want to suspend ${user.firstName} ${user.lastName}?`
-      )
-    ) {
-      return;
-    }
+    // if (
+    //   !window.confirm(
+    //     `Are you sure you want to suspend ${user.firstName} ${user.lastName}?`
+    //   )
+    // ) {
+    //   return;
+    // }
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch(
-        `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}/suspend`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+    logDestructiveAction(ACTION_TYPES.SUSPEND_USER, async () => {
+      setSuspendLoading(true);
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await fetch(
+          `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}/suspend`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          showMessage("User suspended successfully", "success");
+
+          await refetch();
+        } else {
+          throw new Error("Failed to suspend user");
         }
-      );
-
-      if (response.ok) {
-        showMessage("User suspended successfully", "success");
-        await refetch();
-      } else {
-        throw new Error("Failed to suspend user");
+      } catch (error) {
+        showMessage("Failed to suspend user", "error");
+      } finally {
+        setSuspendLoading(false);
       }
-    } catch (error) {
-      showMessage("Failed to suspend user", "error");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleActivateUser = async () => {
@@ -146,52 +157,46 @@ export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
       return;
     }
 
-    if (
-      !window.confirm(
-        `Are you sure you want to activate ${user.firstName} ${user.lastName}?`
-      )
-    ) {
-      return;
-    }
+    // if (
+    //   !window.confirm(
+    //     `Are you sure you want to activate ${user.firstName} ${user.lastName}?`
+    //   )
+    // ) {
+    //   return;
+    // }
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch(
-        `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}/activate`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+    logDestructiveAction(ACTION_TYPES.ACTIVATE_USER, async () => {
+      setActivateLoading(true);
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await fetch(
+          `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}/activate`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          showMessage("User activated successfully", "success");
+          await refetch();
+        } else {
+          throw new Error("Failed to activate user");
         }
-      );
-
-      if (response.ok) {
-        showMessage("User activated successfully", "success");
-        await refetch();
-      } else {
-        throw new Error("Failed to activate user");
+      } catch (error) {
+        showMessage("Failed to activate user", "error");
+      } finally {
+        setActivateLoading(false);
       }
-    } catch (error) {
-      showMessage("Failed to activate user", "error");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleDeleteUser = async () => {
     if (!isSuperAdmin) {
       showMessage("Only super admins can delete users", "warning");
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `⚠️ DANGER: Are you sure you want to permanently DELETE ${user.firstName} ${user.lastName}?\n\nThis action cannot be undone and will remove all user data including:\n- Profile information\n- Calculation history\n- Food diary entries\n\nType "DELETE" to confirm this action.`
-      )
-    ) {
       return;
     }
 
@@ -204,34 +209,35 @@ export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch(
-        `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+    logDestructiveAction(ACTION_TYPES.DELETE_USER, async () => {
+      setDeleteLoading(true);
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await fetch(
+          `${FOODIMETRIC_HOST_URL}/admin/users/${user.id}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          showMessage("User deleted successfully", "success");
+          await refetch();
+          setTimeout(() => onClose(), 1500);
+        } else {
+          throw new Error("Failed to delete user");
         }
-      );
-
-      if (response.ok) {
-        showMessage("User deleted successfully", "success");
-        await refetch();
-        setTimeout(() => onClose(), 1500);
-      } else {
-        throw new Error("Failed to delete user");
+      } catch (error) {
+        showMessage("Failed to delete user", "error");
+      } finally {
+        setDeleteLoading(false);
       }
-    } catch (error) {
-      showMessage("Failed to delete user", "error");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
-
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -691,41 +697,39 @@ export const UserDetailModal = ({ user: initialUser, onClose }: Props) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={handleSuspendUser}
-                  disabled={loading || user.status === "suspended"}
+                  disabled={suspendLoading || user.status === "suspended"}
                   className={`py-3 px-4 rounded-lg font-medium transition-all transform hover:scale-105 ${
                     user.status === "suspended"
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-red-600 text-white hover:bg-red-700 shadow-lg"
                   }`}
                 >
-                  {loading ? "Processing..." : "Suspend User"}
+                  {suspendLoading ? "Processing..." : "Suspend User"}
                 </button>
                 <button
                   onClick={handleActivateUser}
-                  disabled={loading || user.status === "active"}
+                  disabled={activateLoading || user.status === "active"}
                   className={`py-3 px-4 rounded-lg font-medium transition-all transform hover:scale-105 ${
                     user.status === "active"
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
                   }`}
                 >
-                  {loading ? "Processing..." : "Activate User"}
+                  {activateLoading ? "Processing..." : "Activate User"}
                 </button>
                 <button
                   onClick={handleDeleteUser}
-                  disabled={loading}
+                  disabled={deleteLoading}
                   className={`py-3 px-4 rounded-lg font-medium transition-all transform hover:scale-105 ${
                     !isSuperAdmin
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-400"
                       : "border-2 border-red-600 text-red-600 hover:bg-red-50 shadow-lg cursor-pointer"
                   }`}
                   title={
-                    !isSuperAdmin
-                      ? "Only Super Admins can delete users"
-                      : ""
+                    !isSuperAdmin ? "Only Super Admins can delete users" : ""
                   }
                 >
-                  {loading ? "Processing..." : "Delete User"}
+                  {deleteLoading ? "Processing..." : "Delete User"}
                 </button>
               </div>
               {!isSuperAdmin && (

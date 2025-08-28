@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { FOODIMETRIC_HOST_URL } from "../../utils"; // Adjust path as needed
+import { useActivityLog } from "../Activity-log/context/ActivityLogContext";
 
 export const CreateUserModal = ({
   email,
@@ -27,8 +28,8 @@ export const CreateUserModal = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const { logActivity } = useActivityLog();
 
-  // Get user role from localStorage
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
@@ -88,6 +89,13 @@ export const CreateUserModal = ({
       const result = await response.json();
       console.log("Admin created successfully:", result);
 
+      await logActivity("Created a new admin user", {
+        admin_name: name.trim(),
+        admin_email: email.trim(),
+        admin_role: role,
+        // created_admin_id: result?.admin_id || result?.id || "unknown",
+      });
+
       setSuccess(
         "Admin user created successfully! Credentials have been sent."
       );
@@ -102,6 +110,14 @@ export const CreateUserModal = ({
       }, 2000);
     } catch (error) {
       console.error("Error creating admin:", error);
+
+      // await logActivity("Failed to create admin user", {
+      //   attempted_name: name.trim(),
+      //   attempted_email: email.trim(),
+      //   attempted_role: role,
+      //   error_message: error instanceof Error ? error.message : "Unknown error",
+      // });
+
       setError(
         error instanceof Error ? error.message : "Failed to create admin user"
       );
@@ -110,11 +126,26 @@ export const CreateUserModal = ({
     }
   };
 
+  const handleClose = async () => {
+    const hasData = name.trim() || email.trim() || password.trim();
+    if (hasData) {
+      await logActivity("Cancelled admin user creation", {
+        partial_data: {
+          name: name.trim() || null,
+          email: email.trim() || null,
+          role: role,
+        },
+      });
+    }
+
+    onClose();
+  };
+
   return (
     <div className="fixed -top-10 inset-0 z-50 bg-black/40 flex items-center justify-center">
       <div className="relative bg-white w-full max-w-md mx-4 sm:mx-0 rounded-xl p-6 shadow-xl">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
         >
           <X size={20} />

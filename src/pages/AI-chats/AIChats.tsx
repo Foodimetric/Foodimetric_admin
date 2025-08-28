@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SkeletonBox } from "../../components/SkeletonBox";
 import { FOODIMETRIC_HOST_URL } from "../../utils";
+import { ACTION_TYPES, ActivityLogger } from "../Activity-log/context/ActivityLogContext";
 
 interface ChatUser {
   id: string;
@@ -191,6 +192,8 @@ export const AIChatDashboard = () => {
       }.txt`;
       a.click();
       URL.revokeObjectURL(url);
+
+      await ActivityLogger.logActivity(ACTION_TYPES.EXPORT_AI_CHATS);
 
       alert("Messages exported successfully!");
     } catch (error) {

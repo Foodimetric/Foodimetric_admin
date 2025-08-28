@@ -4,13 +4,17 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FOODIMETRIC_HOST_URL } from "../utils";
 import { useAnalytics } from "../contexts/AnalyticsContext";
+import {
+  ACTION_TYPES,
+  ActivityLogger,
+  UserDataManager,
+} from "./Activity-log/context/ActivityLogContext";
 
 const VerifyEmail = () => {
-  const { refetch } = useAnalytics(); 
+  const { refetch } = useAnalytics();
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || "";
-  
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -104,17 +108,37 @@ const VerifyEmail = () => {
 
       const data = await response.json();
 
-      // Store token if API returns one
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
+      if (data.success && data.token) {
+        UserDataManager.storeUserData(data);
+
         localStorage.setItem("userRole", data.role);
+
+        await ActivityLogger.logActivity(ACTION_TYPES.LOGIN);
+
+        // console.log("User data stored:", {
+        //   admin_id: data.admin_id,
+        //   role: data.role,
+        //   name: data.name,
+        //   token: data.token,
+        // });
+
+        //     const userData = {
+        //       admin_id: data.admin_id,
+        //       role: data.role,
+        //       name: data.name,
+        //       token: data.token,
+        //     };
+
+        // localStorage.setItem("userData", JSON.stringify(userData));
       }
-      await refetch()
-      
+
+      await refetch();
+
       toast.success("Email verified successfully!");
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (error: any) {
       toast.error(error.message || "An error occurred during verification.");
+      console.error("Login verification error:", error);
     } finally {
       setVerifying(false);
     }

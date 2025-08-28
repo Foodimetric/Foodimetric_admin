@@ -23,7 +23,7 @@ const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"];
 
 export const AnalyticsDashboard = () => {
   const { analytics, loading, error, refetch } = useAnalytics();
-  const [period, setPeriod] = useState<
+  const [calculatorPeriod, setCalculatorPeriod] = useState<
     "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Daily");
   const [usagePeriod, setUsagePeriod] = useState<
@@ -176,58 +176,52 @@ export const AnalyticsDashboard = () => {
     }));
 
     const getCalculatorTrends = () => {
-      const baseData = (() => {
-        switch (period) {
-          case "Daily":
-            return analytics.dailyCalculations
-              .slice(0, 60)
-              .map((calc: any) => ({
-                date: calc._id,
-                total: calc.count,
-              }));
-          case "Weekly":
-            return analytics.weeklyCalculations.map((calc: any) => ({
-              date: calc.week,
-              total: calc.count,
-            }));
-          case "Monthly":
-            return analytics.monthlyCalculations.map((calc: any) => ({
-              date: calc.month,
-              total: calc.count,
-            }));
-          case "Yearly":
-            return analytics.yearlyCalculations.map((calc: any) => ({
-              date: calc.year,
-              total: calc.count,
-            }));
-          default:
-            return analytics.dailyCalculations.map((calc: any) => ({
-              date: calc._id,
-              total: calc.count,
-            }));
-        }
-      })();
+      // const baseData = (() => {
+      switch (calculatorPeriod) {
+        case "Daily":
+          return analytics.dailyCalculations.slice(0, 60).map((calc: any) => ({
+            date: calc._id ?? "Unspecified",
+            count: calc.count,
+          }));
+        case "Weekly":
+          return analytics.weeklyCalculations.map((calc: any) => ({
+            date: calc.week,
+            count: calc.count,
+          }));
+        case "Monthly":
+          return analytics.monthlyCalculations.map((calc: any) => ({
+            date: calc.month,
+            count: calc.count,
+          }));
+        case "Yearly":
+          return analytics.yearlyCalculations.map((calc: any) => ({
+            date: calc.year,
+            count: calc.count,
+          }));
+        default:
+          return analytics.dailyCalculations.map((calc: any) => ({
+            date: calc._id,
+            count: calc.count,
+          }));
+      }
+      // })();
 
-      const totalCalculations = analytics.mostUsedCalculators.reduce(
-        (sum, calc) => sum + calc.count,
-        0
-      );
-      const calculatorRatios = analytics.mostUsedCalculators.reduce(
-        (acc, calc) => {
-          acc[calc.name] = calc.count / totalCalculations;
-          return acc;
-        },
-        {} as Record<string, number>
-      );
+      // const totalCalculations = analytics.mostUsedCalculators.reduce(
+      //   (sum, calc) => sum + calc.count,
+      //   0
+      // );
+      // const calculatorRatios = analytics.mostUsedCalculators.reduce(
+      //   (acc, calc) => {
+      //     acc[calc.name] = calc.count / totalCalculations;
+      //     return acc;
+      //   },
+      //   {} as Record<string, number>
+      // );
 
-      return baseData.map((item: any) => ({
-        date: item.date,
-        BMI: Math.floor(item.total * (calculatorRatios.BMI || 0)),
-        IBW: Math.floor(item.total * (calculatorRatios.IBW || 0)),
-        WHR: Math.floor(item.total * (calculatorRatios.WHR || 0)),
-        BMR: Math.floor(item.total * (calculatorRatios.BMR || 0)),
-        EE: Math.floor(item.total * (calculatorRatios.EE || 0)),
-      }));
+      // return baseData.map((item: any) => ({
+      //   date: item.date,
+      //   count: item.count,
+      // }));
     };
 
     const calcMap = Object.fromEntries(
@@ -262,7 +256,7 @@ export const AnalyticsDashboard = () => {
       userActivityData,
       topCalculatorUsersData,
     };
-  }, [analytics, period, usagePeriod, signupPeriod, foodDiaryPeriod]);
+  }, [analytics, calculatorPeriod, usagePeriod, signupPeriod, foodDiaryPeriod]);
 
   if (loading) {
     return (
@@ -442,8 +436,8 @@ export const AnalyticsDashboard = () => {
           <h2 className="text-lg font-semibold">Calculator Usage Over Time</h2>
           <select
             className="border px-2 py-1 rounded text-sm"
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as any)}
+            value={calculatorPeriod}
+            onChange={(e) => setCalculatorPeriod(e.target.value as any)}
           >
             <option>Daily</option>
             <option>Weekly</option>
@@ -460,12 +454,12 @@ export const AnalyticsDashboard = () => {
             <Legend />
             <Area
               type="monotone"
-              dataKey="BMI"
-              stackId="1"
-              stroke="#3b82f6"
-              fill="#bfdbfe"
+              dataKey="count"
+              stroke="#8b5cf6"
+              fill="#ef4444"
+              strokeWidth={2}
             />
-            <Area
+            {/* <Area
               type="monotone"
               dataKey="IBW"
               stackId="1"
@@ -492,7 +486,7 @@ export const AnalyticsDashboard = () => {
               stackId="1"
               stroke="#8b5cf6"
               fill="#ddd6fe"
-            />
+            /> */}
           </AreaChart>
         </ResponsiveContainer>
       </div>
