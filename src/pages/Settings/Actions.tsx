@@ -155,7 +155,7 @@ export const Actions = () => {
           </p>
           <button
             onClick={monthlyCredit}
-            disabled={!isFirstDay}
+            // disabled={!isFirstDay}
             className={`${
               isFirstDay
                 ? "bg-red-600 hover:bg-red-700"

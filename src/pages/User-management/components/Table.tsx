@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CreditAdjustModal } from "./Modals/CreditAdjustModal";
 import { User } from "../types/user";
 import { UserDetailModal } from "./Modals/UserDetailModal";
@@ -46,6 +46,7 @@ type TableInstanceWithSortingAndPagination<D extends object> =
       nextPage: () => void;
       previousPage: () => void;
       setPageSize: (size: number) => void;
+      setSortBy: (sortBy: Array<{ id: string; desc: boolean }>) => void;
       state: {
         pageIndex: number;
         pageSize: number;
@@ -75,13 +76,13 @@ export const Table = ({
     propData ||
     analytics?.allUsers?.map((user: any) => ({
       id: String(user._id),
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      usage: user.usage,
-      category: user.category,
-      googleId: user.googleId,
-      credits: user.credits,
+      email: user.email || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      usage: Number(user.usage) || 0,
+      category: Number(user.category) || 0,
+      googleId: user.googleId || null,
+      credits: Number(user.credits) || 0,
       lastUsageDate: user.lastUsageDate
         ? new Date(user.lastUsageDate).toLocaleDateString("en-GB", {
             year: "numeric",
@@ -89,17 +90,21 @@ export const Table = ({
             day: "numeric",
           })
         : "Unknown",
-      verified: user.isVerified,
-      longestStreak: user.longestStreak,
-      location: user.location,
-      streak: user.streak,
+      verified: Boolean(user.isVerified),
+      longestStreak: Number(user.longestStreak) || 0,
+      location: user.location || "",
+      streak: Number(user.streak) || 0,
       healthProfile: user.healthProfile,
       latestCalculation: user.latestCalculation,
       partnerDetails: user.partnerDetails,
-      status: user.status,
+      status: user.status || "",
       latestFoodLogs: user.latestFoodLogs,
       notifications: user.notifications,
       fcmTokens: user.fcmTokens,
+      // Add raw date for proper sorting
+      rawLastUsageDate: user.lastUsageDate
+        ? new Date(user.lastUsageDate)
+        : null,
     })) ||
     [];
 
@@ -132,47 +137,96 @@ export const Table = ({
     setOpenMenuId((prev) => (prev === id ? null : id));
   };
 
-  // Columns for react-table
+  // Custom sort functions
+  const dateSort = (rowA: any, rowB: any) => {
+    const a = rowA.original.rawLastUsageDate;
+    const b = rowB.original.rawLastUsageDate;
+
+    // Handle null dates (put them at the end)
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+
+    return new Date(a).getTime() - new Date(b).getTime();
+  };
+
+  const numericSort = (rowA: any, rowB: any, columnId: string) => {
+    const a = Number(rowA.values[columnId]) || 0;
+    const b = Number(rowB.values[columnId]) || 0;
+    return a - b;
+  };
+
+  const stringSort = (rowA: any, rowB: any, columnId: string) => {
+    const a = String(rowA.values[columnId] || "").toLowerCase();
+    const b = String(rowB.values[columnId] || "").toLowerCase();
+    return a.localeCompare(b);
+  };
+
+  const categorySort = (rowA: any, rowB: any, columnId: string) => {
+    const a = getRole(Number(rowA.values[columnId]) || 0);
+    const b = getRole(Number(rowB.values[columnId]) || 0);
+    return a.localeCompare(b);
+  };
+
+  const booleanSort = (rowA: any, rowB: any, columnId: string) => {
+    const a = Boolean(rowA.values[columnId]);
+    const b = Boolean(rowB.values[columnId]);
+    return Number(a) - Number(b);
+  };
+
+  // Columns for react-table with proper sorting
   const columns: Column<User>[] = useMemo(
     () => [
       {
         Header: "Email",
         accessor: "email",
+        sortType: stringSort,
         Cell: ({ value }) => (
-          <span className="font-medium text-blue-600">{value}</span>
+          <span className="font-medium text-blue-600">{value || "N/A"}</span>
         ),
       },
       {
         Header: "First Name",
         accessor: "firstName",
-        Cell: ({ value }) => <span className="capitalize">{value}</span>,
+        sortType: stringSort,
+        Cell: ({ value }) => (
+          <span className="capitalize">{value || "N/A"}</span>
+        ),
       },
       {
         Header: "Last Name",
         accessor: "lastName",
-        Cell: ({ value }) => <span className="capitalize">{value}</span>,
+        sortType: stringSort,
+        Cell: ({ value }) => (
+          <span className="capitalize">{value || "N/A"}</span>
+        ),
       },
       {
         Header: "Usage",
         accessor: "usage",
+        sortType: numericSort,
         Cell: ({ value }) => (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            {value?.toLocaleString()}
+            {Number(value || 0).toLocaleString()}
           </span>
         ),
       },
       {
         Header: "Streak",
         accessor: "streak",
+        sortType: numericSort,
+        Cell: ({ value }) => <span>{Number(value || 0)}</span>,
       },
       {
         Header: "Role",
         accessor: "category",
-        Cell: ({ value }) => getRole(value),
+        sortType: categorySort,
+        Cell: ({ value }) => getRole(Number(value || 0)),
       },
       {
         Header: "Google ID",
         accessor: "googleId",
+        sortType: stringSort,
         Cell: ({ value }) => (
           <span className="font-mono text-xs">{value || "N/A"}</span>
         ),
@@ -180,35 +234,45 @@ export const Table = ({
       {
         Header: "Credits",
         accessor: "credits",
-        Cell: ({ value }) => (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              value > 500
-                ? "bg-green-100 text-green-800"
-                : value > 100
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {value?.toLocaleString()}
-          </span>
-        ),
+        sortType: numericSort,
+        Cell: ({ value }) => {
+          const credits = Number(value || 0);
+          return (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                credits > 500
+                  ? "bg-green-100 text-green-800"
+                  : credits > 100
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {credits.toLocaleString()}
+            </span>
+          );
+        },
       },
       {
         Header: "Last Usage Date",
         accessor: "lastUsageDate",
-        Cell: ({ value }) => <span className="text-gray-600">{value}</span>,
+        sortType: dateSort,
+        Cell: ({ value }) => (
+          <span className="text-gray-600">{value || "Unknown"}</span>
+        ),
       },
       {
         Header: "Verified",
         accessor: "verified",
+        sortType: booleanSort,
         Cell: ({ value }) => (
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-              value ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              Boolean(value)
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
             }`}
           >
-            {value ? "Verified" : "Unverified"}
+            {Boolean(value) ? "Verified" : "Unverified"}
           </span>
         ),
       },
@@ -230,7 +294,7 @@ export const Table = ({
     [openMenuId]
   );
 
-  // React Table instance with sorting and pagination
+  // React Table instance - NO initialState to avoid TypeScript errors
   const {
     getTableProps,
     getTableBodyProps,
@@ -244,25 +308,33 @@ export const Table = ({
     gotoPage,
     nextPage,
     previousPage,
+    setPageSize,
+    setSortBy,
     state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
       data: filteredData,
-      initialState: {
-        pageIndex: 0,
-        pageSize: ITEMS_PER_PAGE,
-        sortBy: [
-          {
-            id: "credits",
-            desc: true,
-          },
-        ],
-      } as any,
-    },
+      disableSortBy: false,
+      autoResetSortBy: false,
+      autoResetPage: false,
+      sortTypes: {
+        numericSort,
+        stringSort,
+        dateSort,
+        categorySort,
+        booleanSort,
+      },
+    }as any,
     useSortBy,
     usePagination
   ) as TableInstanceWithSortingAndPagination<User>;
+
+  // Set initial values after table creation
+  useEffect(() => {
+    setPageSize(ITEMS_PER_PAGE);
+    setSortBy([{ id: "credits", desc: true }]);
+  }, [setPageSize, setSortBy]);
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -381,20 +453,28 @@ export const Table = ({
                         sortableColumn.getSortByToggleProps?.()
                       )}
                       key={column.id}
-                      className="p-3 font-semibold text-left cursor-pointer hover:bg-gray-50"
+                      className={`p-3 font-semibold text-left transition-colors ${
+                        sortableColumn.canSort
+                          ? "cursor-pointer hover:bg-gray-200 select-none"
+                          : ""
+                      }`}
+                      title={sortableColumn.canSort ? "Click to sort" : ""}
                     >
                       <div className="flex items-center gap-1">
                         {column.render("Header")}
                         {sortableColumn.canSort && (
-                          <span>
+                          <span className="ml-1">
                             {sortableColumn.isSorted ? (
                               sortableColumn.isSortedDesc ? (
-                                <ChevronDownIcon className="h-3 w-3 text-gray-400" />
+                                <ChevronDownIcon className="h-4 w-4 text-gray-600" />
                               ) : (
-                                <ChevronUpIcon className="h-3 w-3 text-gray-400" />
+                                <ChevronUpIcon className="h-4 w-4 text-gray-600" />
                               )
                             ) : (
-                              <div className="h-3 w-3" />
+                              <div className="flex flex-col">
+                                <ChevronUpIcon className="h-3 w-3 text-gray-300 -mb-1" />
+                                <ChevronDownIcon className="h-3 w-3 text-gray-300" />
+                              </div>
                             )}
                           </span>
                         )}
