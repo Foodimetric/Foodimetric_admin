@@ -38,7 +38,7 @@ const Login = () => {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userRole", data.role);
 
-      toast.success("Verification code sent to your email.");
+      toast.success(data.message || "Verification code sent to your email.");
 
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
@@ -122,11 +122,10 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full p-2 text-white rounded-md ${
-              loading
+            className={`w-full p-2 text-white rounded-md ${loading
                 ? "cursor-wait bg-gray-500"
                 : "bg-indigo-600 hover:bg-indigo-700"
-            }`}
+              }`}
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
