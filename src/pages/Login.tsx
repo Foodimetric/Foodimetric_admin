@@ -38,8 +38,12 @@ const Login = () => {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userRole", data.role);
 
-      toast.success(data.message || "Verification code sent to your email.");
-
+      toast.success(
+        data.message || "Verification code sent to your email.",
+        {
+          duration: 20000 // Set the duration in milliseconds (20 seconds)
+        }
+      );
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
       }, 1500);
@@ -123,8 +127,8 @@ const Login = () => {
             type="submit"
             disabled={loading}
             className={`w-full p-2 text-white rounded-md ${loading
-                ? "cursor-wait bg-gray-500"
-                : "bg-indigo-600 hover:bg-indigo-700"
+              ? "cursor-wait bg-gray-500"
+              : "bg-indigo-600 hover:bg-indigo-700"
               }`}
           >
             {loading ? "Signing in..." : "Sign in"}
