@@ -41,8 +41,8 @@ const Login = () => {
       toast.success(
         data.message || "Verification code sent to your email.",
         {
-          // Set the duration to 30000 milliseconds (30 seconds)
-          duration: 30000
+          // Use 'autoClose' instead of 'duration' for react-toastify
+          autoClose: 30000 // Set the duration in milliseconds (30 seconds)
         }
       );
       setTimeout(() => {
@@ -77,6 +77,7 @@ const Login = () => {
               Select Role
             </label>
             <select
+              title="Select Role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 bg-transparent text-white"
