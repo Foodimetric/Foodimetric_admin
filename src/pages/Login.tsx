@@ -41,7 +41,8 @@ const Login = () => {
       toast.success(
         data.message || "Verification code sent to your email.",
         {
-          duration: 20000 // Set the duration in milliseconds (20 seconds)
+          // Set the duration to 30000 milliseconds (30 seconds)
+          duration: 30000
         }
       );
       setTimeout(() => {
