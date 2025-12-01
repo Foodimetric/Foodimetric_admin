@@ -38,13 +38,7 @@ const Login = () => {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userRole", data.role);
 
-      toast.success(
-        data.message || "Verification code sent to your email.",
-        {
-          // Use 'autoClose' instead of 'duration' for react-toastify
-          duration: 600000 // Set the duration in milliseconds (30 seconds)
-        }
-      );
+      toast.success(data.message || "Verification code sent to your email.");
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
       }, 1500);
