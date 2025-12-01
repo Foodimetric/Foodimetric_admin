@@ -41,7 +41,7 @@ const Login = () => {
       toast.info(data.message || "Verification code sent to your email.");
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
-      }, 20000);
+      }, 10000);
     } catch (error: any) {
       setError(error.message || "An error occurred.");
       toast.error(error.message);
