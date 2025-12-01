@@ -7,7 +7,7 @@ import { NotificationProvider } from "./pages/Notification/context/NotificationC
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+    <Toaster position="top-right" toastOptions={{ duration: 600000 }} />
     <NotificationProvider>
       <App />
     </NotificationProvider>
