@@ -38,10 +38,10 @@ const Login = () => {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userRole", data.role);
 
-      toast.success(data.message || "Verification code sent to your email.");
+      toast.info(data.message || "Verification code sent to your email.");
       setTimeout(() => {
         navigate("/verify-email", { state: { email } });
-      }, 1500);
+      }, 3000);
     } catch (error: any) {
       setError(error.message || "An error occurred.");
       toast.error(error.message);
