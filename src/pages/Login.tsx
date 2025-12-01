@@ -42,7 +42,7 @@ const Login = () => {
         data.message || "Verification code sent to your email.",
         {
           // Use 'autoClose' instead of 'duration' for react-toastify
-          autoClose: 30000 // Set the duration in milliseconds (30 seconds)
+          autoClose: 600000 // Set the duration in milliseconds (30 seconds)
         }
       );
       setTimeout(() => {
