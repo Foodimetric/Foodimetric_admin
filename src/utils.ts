@@ -1,1 +1,1 @@
-export const FOODIMETRIC_HOST_URL = "https://foodimetric-backend.onrender.com"
+export const FOODIMETRIC_HOST_URL = "https://api.foodimetric.com"
