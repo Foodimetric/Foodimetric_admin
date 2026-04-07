@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsAuthenticated(false);
 
     // Optional: Redirect to login
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   const value = {
