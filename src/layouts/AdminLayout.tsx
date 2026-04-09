@@ -10,6 +10,7 @@ import {
   Menu,
   LogOut,
   BotMessageSquare,
+  LibraryBig,
 } from "lucide-react";
 import clsx from "clsx";
 import { NotificationBell } from "../components/NotificationBell";
@@ -28,6 +29,15 @@ const navItems = [
     icon: BotMessageSquare,
     subNav: [{ name: "Custom Prompt", path: "/ai-chats/custom-prompt" }],
   },
+  {
+  name: "Resources",
+  path: "/resources",
+  icon: LibraryBig,
+  subNav: [
+    { name: "Upload Articles", path: "/resources?tab=articles" },
+    { name: "Upload Courses", path: "/resources?tab=courses" },
+  ],
+},
   { name: "Promo Codes", path: "/promo-codes", icon: Percent },
   { name: "Activity Logs", path: "/activity-logs", icon: ListOrdered },
   { name: "Notifications", path: "/notification", icon: Bell },
@@ -69,7 +79,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                   "flex items-center gap-3 px-4 py-3 rounded-2xl text-base transition-all",
                   location.pathname.startsWith(path)
                     ? "bg-blue-100 text-blue-700 font-semibold"
-                    : "text-gray-700 hover:bg-gray-100"
+                    : "text-gray-700 hover:bg-gray-100",
                 )}
               >
                 <Icon size={18} />
@@ -92,9 +102,12 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                         onClick={closeSidebar}
                         className={clsx(
                           "block text-sm px-3 py-1 rounded-md transition-all",
-                          location.pathname === sub.path
+                          location.pathname + location.search === sub.path ||
+                            (location.pathname === "/resources" &&
+                              !location.search &&
+                              sub.path === "/resources?tab=articles")
                             ? "bg-blue-50 text-blue-600 font-medium"
-                            : "text-gray-600 hover:bg-gray-100"
+                            : "text-gray-600 hover:bg-gray-100",
                         )}
                       >
                         {sub.name}

@@ -19,6 +19,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import { AuthProvider } from "./components/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AnalyticsProvider } from "./contexts/AnalyticsContext";
+import ResourcesPage from "./pages/Resources/ResourcesPage";
 
 function App() {
   return (
@@ -49,6 +50,12 @@ function App() {
                         <Route
                           path="/ai-chats/custom-prompt"
                           element={<CustomPrompts />}
+                        />
+                        <Route
+                          path="/resources"
+                          element={
+                              <ResourcesPage />
+                          }
                         />
                         <Route
                           path="/promo-codes"
