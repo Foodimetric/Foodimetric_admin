@@ -3,7 +3,6 @@ import { CreditAdjustModal } from "./Modals/CreditAdjustModal";
 import { User } from "../types/user";
 import { UserDetailModal } from "./Modals/UserDetailModal";
 import { UserOptionsMenu } from "./UserOptionsMenu";
-import { useAnalytics } from "../../../contexts/AnalyticsContext";
 import {
   useTable,
   useSortBy,
@@ -21,18 +20,14 @@ import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
 const ITEMS_PER_PAGE = 10;
 
 interface TableProps {
-  data?: User[];
+  data: User[];
   searchTerm?: string;
-  loading?: boolean;
-  error?: string;
 }
 
-// Extend HeaderGroup to include sort properties
 interface SortableHeaderGroup<D extends object>
   extends HeaderGroup<D>,
     UseSortByColumnProps<D> {}
 
-// Define table instance type with sorting and pagination
 type TableInstanceWithSortingAndPagination<D extends object> =
   TableInstance<D> &
     UseSortByState<D> &
@@ -54,99 +49,35 @@ type TableInstanceWithSortingAndPagination<D extends object> =
       };
     };
 
-export const Table = ({
-  data: propData,
-  searchTerm = "",
-  loading: propLoading,
-  error: propError,
-}: TableProps) => {
+const getRole = (category: number) => {
+  switch (category) {
+    case 1:
+      return "Lecturer/Researcher";
+    case 2:
+      return "Dietitian/Clinical Nutritionist";
+    case 3:
+      return "Nutrition Student";
+    default:
+      return "Others";
+  }
+};
+
+export const Table = ({ data, searchTerm = "" }: TableProps) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  // Use analytics hook when no prop data is provided
-  const { analytics, loading: hookLoading, error: hookError } = useAnalytics();
-
-  // Use prop values if provided, otherwise use hook values
-  const loading = propLoading !== undefined ? propLoading : hookLoading;
-  const error = propError !== undefined ? propError : hookError;
-
-  // Use prop data if provided, otherwise transform analytics data
-  const data: User[] =
-    propData ||
-    analytics?.allUsers?.map((user: any) => ({
-      id: String(user._id),
-      email: user.email || "",
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      usage: Number(user.usage) || 0,
-      category: Number(user.category) || 0,
-      googleId: user.googleId || null,
-      credits: Number(user.credits) || 0,
-      lastUsageDate: user.lastUsageDate
-        ? new Date(user.lastUsageDate).toLocaleDateString("en-GB", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })
-        : "Unknown",
-      verified: Boolean(user.isVerified),
-      longestStreak: Number(user.longestStreak) || 0,
-      location: user.location || "",
-      streak: Number(user.streak) || 0,
-      healthProfile: user.healthProfile,
-      latestCalculation: user.latestCalculation,
-      partnerDetails: user.partnerDetails,
-      status: user.status || "",
-      latestFoodLogs: user.latestFoodLogs,
-      notifications: user.notifications,
-      fcmTokens: user.fcmTokens,
-      // Add raw date for proper sorting
-      rawLastUsageDate: user.lastUsageDate
-        ? new Date(user.lastUsageDate)
-        : null,
-    })) ||
-    [];
-
-  // Filter data based on search term
-  const filteredData = useMemo(() => {
-    return data.filter((user) =>
-      searchTerm === ""
-        ? true
-        : [user.firstName, user.lastName, user.email]
-            .join(" ")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-    );
-  }, [data, searchTerm]);
-
-  const getRole = (category: number) => {
-    switch (category) {
-      case 1:
-        return "Lecturer/Researcher";
-      case 2:
-        return "Dietitian/Clinical Nutritionist";
-      case 3:
-        return "Nutrition Student";
-      default:
-        return "Others";
-    }
-  };
 
   const toggleMenu = (id: string) => {
     setOpenMenuId((prev) => (prev === id ? null : id));
   };
 
-  // Custom sort functions
+  // Sort functions
   const dateSort = (rowA: any, rowB: any) => {
     const a = rowA.original.rawLastUsageDate;
     const b = rowB.original.rawLastUsageDate;
-
-    // Handle null dates (put them at the end)
     if (!a && !b) return 0;
     if (!a) return 1;
     if (!b) return -1;
-
     return new Date(a).getTime() - new Date(b).getTime();
   };
 
@@ -174,7 +105,6 @@ export const Table = ({
     return Number(a) - Number(b);
   };
 
-  // Columns for react-table with proper sorting
   const columns: Column<User>[] = useMemo(
     () => [
       {
@@ -294,7 +224,6 @@ export const Table = ({
     [openMenuId]
   );
 
-  // React Table instance - NO initialState to avoid TypeScript errors
   const {
     getTableProps,
     getTableBodyProps,
@@ -308,39 +237,35 @@ export const Table = ({
     gotoPage,
     nextPage,
     previousPage,
-    setPageSize,
-    setSortBy,
     state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
-      data: filteredData,
+      data,
+      // Set initial sort and page size here — no useEffect needed
+      initialState: {
+        pageSize: ITEMS_PER_PAGE,
+        sortBy: [{ id: "credits", desc: true }],
+      } as any,
       disableSortBy: false,
+      // Reset page to 0 when data (search results) changes
+      autoResetPage: true,
+      // Don't reset sort when data changes
       autoResetSortBy: false,
-      autoResetPage: false,
-      sortTypes: {
-        numericSort,
-        stringSort,
-        dateSort,
-        categorySort,
-        booleanSort,
-      },
-    }as any,
+    } as any,
     useSortBy,
     usePagination
   ) as TableInstanceWithSortingAndPagination<User>;
 
-  // Set initial values after table creation
+  // Reset to page 0 when searchTerm changes
   useEffect(() => {
-    setPageSize(ITEMS_PER_PAGE);
-    setSortBy([{ id: "credits", desc: true }]);
-  }, [setPageSize, setSortBy]);
+    gotoPage(0);
+  }, [searchTerm]);
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const delta = 2;
     const range = [];
-    const rangeWithDots = [];
+    const rangeWithDots: (number | string)[] = [];
 
     for (
       let i = Math.max(2, pageIndex + 1 - delta);
@@ -367,47 +292,7 @@ export const Table = ({
     return rangeWithDots;
   };
 
-  if (!propData && loading) {
-    return (
-      <div className="p-4">
-        <div className="min-w-full bg-white rounded-md shadow">
-          <div className="animate-pulse">
-            <div className="bg-gray-100 p-3">
-              <div className="grid grid-cols-10 gap-4">
-                {[...Array(10)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded"></div>
-                ))}
-              </div>
-            </div>
-            {[...Array(ITEMS_PER_PAGE)].map((_, rowIndex) => (
-              <div key={rowIndex} className="border-t p-3">
-                <div className="grid grid-cols-10 gap-4">
-                  {[...Array(10)].map((_, colIndex) => (
-                    <div
-                      key={colIndex}
-                      className="h-4 bg-gray-200 rounded"
-                    ></div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!propData && error) {
-    return (
-      <div className="p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-          <p className="text-red-600">Error loading user data: {error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (filteredData.length === 0) {
+  if (data.length === 0) {
     return (
       <div className="p-4">
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
@@ -423,20 +308,19 @@ export const Table = ({
 
   return (
     <div className="p-4">
-      {/* Header with user count */}
+      {/* Header */}
       <div className="mb-4 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-800">
-          User Management ({filteredData.length} users
+          User Management ({data.length} users
           {searchTerm ? ` matching "${searchTerm}"` : ""})
         </h3>
         <div className="text-sm text-gray-600">
-          Showing {pageIndex * pageSize + 1}-
-          {Math.min((pageIndex + 1) * pageSize, filteredData.length)} of{" "}
-          {filteredData.length}
+          Showing {pageIndex * pageSize + 1}–
+          {Math.min((pageIndex + 1) * pageSize, data.length)} of {data.length}
         </div>
       </div>
 
-      {/* React Table */}
+      {/* Table */}
       <div className="overflow-x-auto">
         <table
           {...getTableProps()}
@@ -446,7 +330,8 @@ export const Table = ({
             {headerGroups.map((headerGroup, index) => (
               <tr {...headerGroup.getHeaderGroupProps()} key={index}>
                 {headerGroup.headers.map((column) => {
-                  const sortableColumn = column as SortableHeaderGroup<User>;
+                  const sortableColumn =
+                    column as SortableHeaderGroup<User>;
                   return (
                     <th
                       {...column.getHeaderProps(
@@ -466,9 +351,9 @@ export const Table = ({
                           <span className="ml-1">
                             {sortableColumn.isSorted ? (
                               sortableColumn.isSortedDesc ? (
-                                <ChevronDownIcon className="h-4 w-4 text-gray-600" />
+                                <ChevronDownIcon className="h-4 w-4 text-blue-600" />
                               ) : (
-                                <ChevronUpIcon className="h-4 w-4 text-gray-600" />
+                                <ChevronUpIcon className="h-4 w-4 text-blue-600" />
                               )
                             ) : (
                               <div className="flex flex-col">
@@ -510,7 +395,7 @@ export const Table = ({
         </table>
       </div>
 
-      {/* Enhanced Pagination */}
+      {/* Pagination */}
       {pageCount > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-2 sm:gap-4">
           <div className="flex items-center space-x-1">
@@ -529,7 +414,6 @@ export const Table = ({
               Previous
             </button>
 
-            {/* Page Numbers */}
             <div className="flex items-center space-x-1">
               {getPageNumbers().map((pageNum, index) => (
                 <button
@@ -568,8 +452,8 @@ export const Table = ({
           </div>
 
           <div className="text-sm text-gray-700">
-            Page {pageIndex + 1} of {pageOptions.length} • {filteredData.length}{" "}
-            total users
+            Page {pageIndex + 1} of {pageOptions.length} • {data.length} total
+            users
           </div>
         </div>
       )}

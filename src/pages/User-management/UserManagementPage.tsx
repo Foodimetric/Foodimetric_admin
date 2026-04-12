@@ -1,80 +1,50 @@
 import { useState, useMemo, useEffect } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { Table } from "./components/Table";
-import { useAnalytics } from "../../contexts/AnalyticsContext";
+import { useUserData } from "./hooks/useUserData";
 import { FileDown, UserRoundX } from "lucide-react";
-import { ACTION_TYPES, ActivityLogger } from "../Activity-log/context/ActivityLogContext";
+import {
+  ACTION_TYPES,
+  ActivityLogger,
+} from "../Activity-log/context/ActivityLogContext";
+
+const getRole = (category: number) => {
+  switch (category) {
+    case 1:
+      return "Lecturer/Researcher";
+    case 2:
+      return "Dietitian/Clinical Nutritionist";
+    case 3:
+      return "Nutrition Student";
+    default:
+      return "Others";
+  }
+};
 
 export const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { analytics, loading, error, refetch } = useAnalytics();
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term.toLowerCase());
-  };
+  const { users, loading, error, refetch } = useUserData();
 
   useEffect(() => {
     refetch();
   }, []);
 
-  // Transform analytics data to User format
-  const userData = useMemo(() => {
-    if (!analytics?.allUsers) return [];
-
-    return analytics.allUsers.map((user: any) => ({
-      id: String(user._id), // Ensure ID is a string
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      usage: user.usage,
-      category: user.category,
-      googleId: user.googleId,
-      credits: user.credits,
-      lastUsageDate: user.lastUsageDate
-        ? new Date(user.lastUsageDate).toLocaleDateString("en-GB", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })
-        : "Unknown",
-      verified: user.isVerified,
-      longestStreak: user.longestStreak,
-      location: user.location,
-      streak: user.streak,
-      healthProfile: user.healthProfile,
-      latestCalculation: user.latestCalculation,
-      partnerDetails: user.partnerDetails,
-      status: user.status,
-      latestFoodLogs: user.latestFoodLogs,
-      notifications: user.notifications,
-      fcmTokens: user.fcmTokens,
-    }));
-  }, [analytics]);
-
-  const getRole = (category: number) => {
-    switch (category) {
-      case 1:
-        return "Lecturer/Researcher";
-      case 2:
-        return "Dietitian/Clinical Nutritionist";
-      case 3:
-        return "Nutrition Student";
-      default:
-        return "Others";
-    }
+  const handleSearch = (term: string) => {
+    setSearchTerm(term.toLowerCase());
   };
 
   const filteredUsers = useMemo(() => {
-    return userData.filter((user) =>
+    if (!searchTerm) return users;
+    return users.filter((user) =>
       [user.firstName, user.lastName, user.email]
         .join(" ")
         .toLowerCase()
         .includes(searchTerm)
     );
-  }, [userData, searchTerm]);
+  }, [users, searchTerm]);
 
-  const exportCSV = async (users: typeof filteredUsers) => {
-    if (users.length === 0) {
+  const exportCSV = async () => {
+    if (filteredUsers.length === 0) {
       alert("No data to export.");
       return;
     }
@@ -83,14 +53,13 @@ export const UserManagementPage = () => {
       "Email,First Name,Last Name,Usage,Role,Google ID,Credits,Last Usage Date,Verified",
     ];
 
-    const rows = users.map((user) => {
+    const rows = filteredUsers.map((user) => {
       const escapeCSV = (value: string | number | null | undefined) => {
-        const str = String(value || "");
+        const str = String(value ?? "");
         return str.includes(",") || str.includes('"') || str.includes("\n")
           ? `"${str.replace(/"/g, '""')}"`
           : str;
       };
-
       return [
         escapeCSV(user.email),
         escapeCSV(user.firstName),
@@ -121,8 +90,8 @@ export const UserManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="">
-        {/* Header Section */}
+      <div>
+        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -135,15 +104,11 @@ export const UserManagementPage = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => exportCSV(filteredUsers)}
-                disabled={
-                  filteredUsers.length === 0 ||
-                  filteredUsers.length !== userData.length ||
-                  loading
-                }
+                onClick={exportCSV}
+                disabled={filteredUsers.length === 0 || loading}
                 className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200 flex items-center gap-2"
               >
-                <FileDown className="-4 h-4" />
+                <FileDown className="w-4 h-4" />
                 Export CSV
               </button>
               <div className="text-lg font-bold px-3 py-2 bg-gray-100 rounded-md">
@@ -153,7 +118,7 @@ export const UserManagementPage = () => {
           </div>
         </div>
 
-        {/* Search Section */}
+        {/* Search */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <SearchBar
             placeholder="Search users by name or email..."
@@ -170,7 +135,7 @@ export const UserManagementPage = () => {
           )}
         </div>
 
-        {/* Table Section */}
+        {/* Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-6">
@@ -179,7 +144,7 @@ export const UserManagementPage = () => {
                   <div
                     key={idx}
                     className="h-12 bg-gray-200 animate-pulse rounded-md"
-                  ></div>
+                  />
                 ))}
               </div>
             </div>
@@ -199,7 +164,7 @@ export const UserManagementPage = () => {
               </h3>
               <p className="text-gray-500">
                 {searchTerm
-                  ? `Try adjusting your search criteria or clearing the search term.`
+                  ? "Try adjusting your search criteria or clearing the search term."
                   : "No user data is currently available."}
               </p>
               {searchTerm && (
@@ -213,20 +178,14 @@ export const UserManagementPage = () => {
             </div>
           ) : (
             <div className="overflow-hidden">
-              <Table
-                data={filteredUsers}
-                searchTerm={searchTerm}
-                loading={loading}
-                error={error}
-              />
+              <Table data={filteredUsers} searchTerm={searchTerm} />
             </div>
           )}
         </div>
 
-        {/* Footer Info */}
         {!loading && !error && filteredUsers.length > 0 && (
           <div className="mt-6 text-center text-sm text-gray-500">
-            Showing {filteredUsers.length} of {userData.length} total users
+            Showing {filteredUsers.length} of {users.length} total users
             {searchTerm && ` matching "${searchTerm}"`}
           </div>
         )}
